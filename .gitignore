@@ -1,0 +1,16 @@
+# Local Python environment
+.venv/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+
+# Project-local temporary files and pyinaturalist cache
+tmp/
+
+# Downloaded/generated data files
+data/
+*.json
+
+# Developer notes
+DEV_NOTES.md
