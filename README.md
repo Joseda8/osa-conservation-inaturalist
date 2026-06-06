@@ -11,7 +11,7 @@ The default pipeline downloads raw observation data for:
 The pipeline is organized as reusable steps.
 
 ### Download raw data
-Downloads raw iNaturalist API pages for each configured project.
+Downloads raw iNaturalist API pages for each configured project. By default, downloads are incremental and include observations updated since the previous local midnight.
 
 Raw data is stored by project and download date:
 
@@ -50,6 +50,18 @@ Run selected steps:
 
 ```bash
 PYTHONPATH=src python3 src/main.py --steps download-raw-data
+```
+
+Run a full raw data download:
+
+```bash
+PYTHONPATH=src python3 src/main.py --steps download-raw-data --download-mode full
+```
+
+Run an incremental download with an explicit local cutoff:
+
+```bash
+PYTHONPATH=src python3 src/main.py --steps download-raw-data --download-mode incremental --updated-since 2026-06-06T00:00:00-06:00
 ```
 
 Run database migrations:

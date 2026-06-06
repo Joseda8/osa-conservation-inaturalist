@@ -5,6 +5,7 @@
 """
 
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from inaturalist_client import InaturalistClient
 from inaturalist_client.project_config import ProjectConfig
@@ -19,6 +20,8 @@ class PipelineContext:
     @param per_page Requested observation batch size.
     @param request_cooldown_seconds Seconds to wait after successful requests.
     @param failure_cooldown_seconds Seconds to wait after failed requests.
+    @param download_mode Raw data download mode.
+    @param updated_since Only download observations updated since this time.
     @param inaturalist_client Client used to download iNaturalist data.
     @param download_summaries Download summaries created by the download step.
     """
@@ -27,6 +30,8 @@ class PipelineContext:
     per_page: int
     request_cooldown_seconds: float
     failure_cooldown_seconds: float
+    download_mode: str
+    updated_since: datetime | str | None = None
     inaturalist_client: InaturalistClient | None = None
     download_summaries: list[ProjectDownloadSummary] = field(default_factory=list)
 

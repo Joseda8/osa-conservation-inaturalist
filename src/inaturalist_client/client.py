@@ -4,7 +4,7 @@
 @brief Provides object-oriented access to iNaturalist downloads.
 """
 
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from time import sleep
 from typing import Any
@@ -62,6 +62,8 @@ class InaturalistClient(JsonFileStorage):
         per_page: int = 25,
         request_cooldown_seconds: float = 1.1,
         failure_cooldown_seconds: float = 60.0,
+        updated_since: datetime | str | None = None,
+        force_refresh: bool = False,
         store: bool | None = None,
     ) -> ProjectDownloadSummary:
         """Download all observation pages for an iNaturalist project.
@@ -71,6 +73,8 @@ class InaturalistClient(JsonFileStorage):
         @param per_page Number of observations to request in one page.
         @param request_cooldown_seconds Seconds to wait after each successful request.
         @param failure_cooldown_seconds Seconds to wait after failed requests.
+        @param updated_since Only include observations updated since this time.
+        @param force_refresh Whether to bypass cached responses.
         @param store Overrides the default JSON storage setting when provided.
         @return Summary of the project download.
         """
@@ -89,6 +93,8 @@ class InaturalistClient(JsonFileStorage):
             project_config.alias,
             project_config.slug,
         )
+        if updated_since is not None:
+            LOGGER.info("Downloading observations updated since %s", updated_since)
 
         while True:
             observation_response = self._download_project_observation_page(
@@ -96,6 +102,8 @@ class InaturalistClient(JsonFileStorage):
                 id_above=last_observation_id,
                 per_page=per_page,
                 failure_cooldown_seconds=failure_cooldown_seconds,
+                updated_since=updated_since,
+                force_refresh=force_refresh,
             )
             if current_page == 1:
                 total_results = int(observation_response.get("total_results", 0))
@@ -154,6 +162,8 @@ class InaturalistClient(JsonFileStorage):
         id_above: int | None,
         per_page: int,
         failure_cooldown_seconds: float,
+        updated_since: datetime | str | None,
+        force_refresh: bool,
     ) -> dict[str, Any]:
         """Download one observation page for an iNaturalist project.
 
@@ -161,6 +171,8 @@ class InaturalistClient(JsonFileStorage):
         @param id_above Only include observations with an ID above this value.
         @param per_page Number of observations to request in one page.
         @param failure_cooldown_seconds Seconds to wait after failed requests.
+        @param updated_since Only include observations updated since this time.
+        @param force_refresh Whether to bypass cached responses.
         @return The observation response dictionary.
         """
         request_parameters: dict[str, Any] = {
@@ -172,26 +184,31 @@ class InaturalistClient(JsonFileStorage):
         }
         if id_above is not None:
             request_parameters["id_above"] = id_above
+        if updated_since is not None:
+            request_parameters["updated_since"] = self._format_api_datetime(updated_since)
 
         return self._get_observations_with_retry(
             request_parameters=request_parameters,
             failure_cooldown_seconds=failure_cooldown_seconds,
+            force_refresh=force_refresh,
         )
 
     def _get_observations_with_retry(
         self,
         request_parameters: dict[str, Any],
         failure_cooldown_seconds: float,
+        force_refresh: bool,
     ) -> dict[str, Any]:
         """Fetch observations, retrying failed requests with the same batch size.
 
         @param request_parameters iNaturalist API request parameters.
         @param failure_cooldown_seconds Seconds to wait after failed requests.
+        @param force_refresh Whether to bypass cached responses.
         @return The observation response dictionary.
         """
         while True:
             try:
-                return self._get_project_observations_response(request_parameters)
+                return self._get_project_observations_response(request_parameters, force_refresh)
             except RequestException as request_error:
                 LOGGER.warning(
                     "Observation request failed with per_page=%s: %s",
@@ -204,10 +221,15 @@ class InaturalistClient(JsonFileStorage):
                     request_parameters["per_page"],
                 )
 
-    def _get_project_observations_response(self, request_parameters: dict[str, Any]) -> dict[str, Any]:
+    def _get_project_observations_response(
+        self,
+        request_parameters: dict[str, Any],
+        force_refresh: bool,
+    ) -> dict[str, Any]:
         """Fetch project observations with the project-local cached session.
 
         @param request_parameters iNaturalist API request parameters.
+        @param force_refresh Whether to bypass cached responses.
         @return Observation response dictionary.
         """
         request_body = {
@@ -221,6 +243,7 @@ class InaturalistClient(JsonFileStorage):
             json=request_body,
             per_page=request_parameters["per_page"],
             session=self._session,
+            force_refresh=force_refresh,
         ).json()
         observation_response["results"] = convert_all_coordinates(observation_response["results"])
         observation_response["results"] = convert_all_timestamps(observation_response["results"])
@@ -264,6 +287,17 @@ class InaturalistClient(JsonFileStorage):
             return download_date.strftime("%Y%m%d")
 
         return download_date
+
+    def _format_api_datetime(self, api_datetime: datetime | str) -> str:
+        """Format a datetime value for iNaturalist API filters.
+
+        @param api_datetime Datetime value or preformatted datetime string.
+        @return ISO formatted datetime string.
+        """
+        if isinstance(api_datetime, str):
+            return api_datetime
+
+        return api_datetime.isoformat()
 
     def _get_last_observation_id(self, observation_results: list[dict[str, Any]]) -> int:
         """Get the last observation ID from an API response page.

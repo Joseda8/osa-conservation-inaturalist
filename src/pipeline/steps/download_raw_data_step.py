@@ -23,5 +23,7 @@ class DownloadRawDataStep:
                 per_page=pipeline_context.per_page,
                 request_cooldown_seconds=pipeline_context.request_cooldown_seconds,
                 failure_cooldown_seconds=pipeline_context.failure_cooldown_seconds,
+                updated_since=pipeline_context.updated_since,
+                force_refresh=pipeline_context.download_mode == "incremental",
             )
             pipeline_context.download_summaries.append(project_summary)

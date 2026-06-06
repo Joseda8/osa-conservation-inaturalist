@@ -5,6 +5,7 @@
 """
 
 import argparse
+from datetime import date, datetime, time, timedelta
 
 from inaturalist_client import OSA_PROJECTS, ProjectDownloadSummary
 from pipeline import Pipeline, PipelineContext
@@ -18,6 +19,12 @@ _STEP_FACTORIES = {
     MigrateDatabaseStep.name: MigrateDatabaseStep,
 }
 
+_DEFAULT_STEP_NAMES = [
+    DownloadRawDataStep.name,
+    MigrateDatabaseStep.name,
+    LoadRawDataToDatabaseStep.name,
+]
+
 
 def _parse_arguments() -> argparse.Namespace:
     """Parse command-line arguments.
@@ -29,7 +36,7 @@ def _parse_arguments() -> argparse.Namespace:
         "--steps",
         nargs="+",
         choices=sorted(_STEP_FACTORIES.keys()),
-        default=sorted(_STEP_FACTORIES.keys()),
+        default=_DEFAULT_STEP_NAMES,
         help="Pipeline steps to run, in the order provided.",
     )
     argument_parser.add_argument(
@@ -54,6 +61,17 @@ def _parse_arguments() -> argparse.Namespace:
         type=float,
         default=60.0,
         help="Seconds to wait after failed API requests before retrying.",
+    )
+    argument_parser.add_argument(
+        "--download-mode",
+        choices=("incremental", "full"),
+        default="incremental",
+        help="Use incremental updated-since downloads or full project downloads.",
+    )
+    argument_parser.add_argument(
+        "--updated-since",
+        default=None,
+        help="Override incremental cutoff as an ISO datetime. Defaults to previous local midnight.",
     )
     return argument_parser.parse_args()
 
@@ -87,6 +105,23 @@ def _print_download_summaries(download_summaries: list[ProjectDownloadSummary]):
         )
 
 
+def _get_incremental_updated_since(arguments: argparse.Namespace) -> datetime | str | None:
+    """Get the incremental updated-since cutoff.
+
+    @param arguments Parsed command-line arguments.
+    @return Updated-since cutoff, or None for full downloads.
+    """
+    if arguments.download_mode == "full":
+        return None
+
+    if arguments.updated_since is not None:
+        return arguments.updated_since
+
+    local_timezone = datetime.now().astimezone().tzinfo
+    previous_local_date = date.today() - timedelta(days=1)
+    return datetime.combine(previous_local_date, time.min, tzinfo=local_timezone)
+
+
 def main():
     """Run the configured OSA data pipeline."""
     arguments = _parse_arguments()
@@ -99,6 +134,8 @@ def main():
         per_page=arguments.per_page,
         request_cooldown_seconds=arguments.request_cooldown,
         failure_cooldown_seconds=arguments.failure_cooldown,
+        download_mode=arguments.download_mode,
+        updated_since=_get_incremental_updated_since(arguments),
     )
     pipeline = Pipeline(steps=_build_steps(arguments.steps))
     pipeline.run(pipeline_context)
