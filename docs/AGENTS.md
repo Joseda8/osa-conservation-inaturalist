@@ -1,13 +1,13 @@
 # Agent Notes
-This repo is intentionally small. Keep changes simple and avoid overengineering.
+Read the `README.md` to catch up with the project. In general keep changes simple and avoid overengineering.
 
 ## Development Constraints
 - Do not execute project code unless the user explicitly asks for it.
-- It is okay to inspect files and make small static checks when useful, but avoid commands like `python download_osa.py` without direct permission.
+- It is okay to inspect files and make small static checks when useful, but avoid commands like `src/main.py` without direct permission.
 - Keep temporary/cache files inside this project. Prefer `./tmp/` over `/tmp` or user/global cache directories.
 - Avoid touching host-level filesystem locations unless the user explicitly asks.
 - Use the existing virtual environment when needed: `.venv/`.
-- The project currently depends on `pyinaturalist==0.21.1`.
+- Dependencies are listed in `requirements.txt`.
 - Prefer iNaturalist API v2 through `pyinaturalist.v2` when the needed endpoint is available.
 
 ## Script Style
@@ -19,3 +19,4 @@ This repo is intentionally small. Keep changes simple and avoid overengineering.
 - Add brief comments above constants to explain their purpose. Do not put these comments beside the code on the same line.
 - Prefix private attributes and methods with `_`.
 - Do not keep dead code or compatibility wrappers that are no longer used.
+- Keep no more than one class per file. When adding a class, create a dedicated module for it.

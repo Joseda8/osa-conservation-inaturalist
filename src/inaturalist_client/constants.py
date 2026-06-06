@@ -6,12 +6,32 @@
 
 from pathlib import Path
 
+from .project_config import ProjectConfig
 
-# iNaturalist login for the OSA Conservation account.
-OSA_USER_LOGIN = "osaconservation"
 
 # Project-local folder for generated cache and temporary files.
 TMP_DIR = Path("tmp")
 
 # Project-local folder for downloaded data files.
 DATA_DIR = Path("data")
+
+# Folder name for raw API page responses inside each project version.
+RAW_DATA_DIR_NAME = "raw_data"
+
+# Project config for the OSA Biodiversity Survey.
+OSA_BIODIVERSITY_SURVEY_PROJECT = ProjectConfig(
+    alias="obs",
+    slug="the-osa-biodiversity-survey",
+)
+
+# Project config for the AmistOSA Biodiversity Survey.
+AMISTOSA_BIODIVERSITY_SURVEY_PROJECT = ProjectConfig(
+    alias="abs",
+    slug="the-amistosa-biodiversity-survey-accbd169-7488-4cbf-b8ea-caf1e31436e3",
+)
+
+# Projects downloaded by the default pipeline.
+OSA_PROJECTS = (
+    OSA_BIODIVERSITY_SURVEY_PROJECT,
+    AMISTOSA_BIODIVERSITY_SURVEY_PROJECT,
+)
