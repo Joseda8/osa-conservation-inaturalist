@@ -62,7 +62,6 @@ class InaturalistClient(JsonFileStorage):
         per_page: int = 25,
         request_cooldown_seconds: float = 1.1,
         failure_cooldown_seconds: float = 60.0,
-        minimum_per_page: int = 1,
         store: bool | None = None,
     ) -> ProjectDownloadSummary:
         """Download all observation pages for an iNaturalist project.
@@ -72,22 +71,16 @@ class InaturalistClient(JsonFileStorage):
         @param per_page Number of observations to request in one page.
         @param request_cooldown_seconds Seconds to wait after each successful request.
         @param failure_cooldown_seconds Seconds to wait after failed requests.
-        @param minimum_per_page Smallest batch size allowed after failures.
         @param store Overrides the default JSON storage setting when provided.
         @return Summary of the project download.
         """
         if per_page <= 0:
             raise ValueError("per_page must be greater than 0")
-        if minimum_per_page <= 0:
-            raise ValueError("minimum_per_page must be greater than 0")
-        if minimum_per_page > per_page:
-            raise ValueError("minimum_per_page must be less than or equal to per_page")
 
         date_version = self._format_download_date(download_date)
         saved_file_paths: list[Path] = []
         current_page = 1
         downloaded_page_count = 0
-        current_per_page = per_page
         total_results = 0
         page_number_padding = 1
         last_observation_id: int | None = None
@@ -99,18 +92,17 @@ class InaturalistClient(JsonFileStorage):
         )
 
         while True:
-            observation_response, current_per_page = self._download_project_observation_page(
+            observation_response = self._download_project_observation_page(
                 project_config=project_config,
                 id_above=last_observation_id,
-                per_page=current_per_page,
+                per_page=per_page,
                 failure_cooldown_seconds=failure_cooldown_seconds,
-                minimum_per_page=minimum_per_page,
             )
             if current_page == 1:
                 total_results = int(observation_response.get("total_results", 0))
                 page_number_padding = self._get_page_number_padding(
                     total_results=total_results,
-                    minimum_per_page=minimum_per_page,
+                    per_page=per_page,
                 )
 
             observation_results = observation_response.get("results", [])
@@ -142,12 +134,11 @@ class InaturalistClient(JsonFileStorage):
 
             downloaded_page_count += 1
             last_observation_id = self._get_last_observation_id(observation_results)
-            if len(observation_results) < current_per_page:
+            if len(observation_results) < per_page:
                 break
 
             self._sleep_after_successful_request(request_cooldown_seconds)
             current_page += 1
-            current_per_page = per_page
 
         LOGGER.info(
             "Completed project download for %s: %s pages, %s total results",
@@ -169,16 +160,14 @@ class InaturalistClient(JsonFileStorage):
         id_above: int | None,
         per_page: int,
         failure_cooldown_seconds: float,
-        minimum_per_page: int,
-    ) -> tuple[dict[str, Any], int]:
+    ) -> dict[str, Any]:
         """Download one observation page for an iNaturalist project.
 
         @param project_config Project to download.
         @param id_above Only include observations with an ID above this value.
         @param per_page Number of observations to request in one page.
         @param failure_cooldown_seconds Seconds to wait after failed requests.
-        @param minimum_per_page Smallest batch size allowed after failures.
-        @return The observation response dictionary and successful batch size.
+        @return The observation response dictionary.
         """
         request_parameters: dict[str, Any] = {
             "project_id": project_config.slug,
@@ -190,55 +179,36 @@ class InaturalistClient(JsonFileStorage):
         if id_above is not None:
             request_parameters["id_above"] = id_above
 
-        return self._get_observations_with_batch_fallback(
+        return self._get_observations_with_retry(
             request_parameters=request_parameters,
-            per_page=per_page,
             failure_cooldown_seconds=failure_cooldown_seconds,
-            minimum_per_page=minimum_per_page,
         )
 
-    def _get_observations_with_batch_fallback(
+    def _get_observations_with_retry(
         self,
         request_parameters: dict[str, Any],
-        per_page: int,
         failure_cooldown_seconds: float,
-        minimum_per_page: int,
-    ) -> tuple[dict[str, Any], int]:
-        """Fetch observations, reducing batch size if the API rejects a heavy request.
+    ) -> dict[str, Any]:
+        """Fetch observations, retrying failed requests with the same batch size.
 
         @param request_parameters iNaturalist API request parameters.
-        @param per_page Number of observations requested in one page.
         @param failure_cooldown_seconds Seconds to wait after failed requests.
-        @param minimum_per_page Smallest batch size allowed after failures.
-        @return The observation response dictionary and successful batch size.
+        @return The observation response dictionary.
         """
-        current_per_page = per_page
         while True:
-            request_parameters["per_page"] = current_per_page
             try:
-                return self._get_project_observations_response(request_parameters), current_per_page
+                return self._get_project_observations_response(request_parameters)
             except RequestException as request_error:
                 LOGGER.warning(
                     "Observation request failed with per_page=%s: %s",
-                    current_per_page,
+                    request_parameters["per_page"],
                     request_error,
                 )
                 self._sleep_after_failed_request(failure_cooldown_seconds)
-
-                if current_per_page == minimum_per_page:
-                    LOGGER.warning(
-                        "Retrying with minimum per_page=%s until the API accepts the request",
-                        minimum_per_page,
-                    )
-                    continue
-
-                next_per_page = max(minimum_per_page, current_per_page // 2)
                 LOGGER.warning(
-                    "Reducing observation batch size from per_page=%s to per_page=%s",
-                    current_per_page,
-                    next_per_page,
+                    "Retrying observation request with the same per_page=%s",
+                    request_parameters["per_page"],
                 )
-                current_per_page = next_per_page
 
     def _get_project_observations_response(self, request_parameters: dict[str, Any]) -> dict[str, Any]:
         """Fetch project observations with the project-local cached session.
@@ -306,14 +276,14 @@ class InaturalistClient(JsonFileStorage):
         """
         return int(observation_results[-1]["id"])
 
-    def _get_page_number_padding(self, total_results: int, minimum_per_page: int) -> int:
+    def _get_page_number_padding(self, total_results: int, per_page: int) -> int:
         """Calculate filename padding from the maximum possible raw page count.
 
         @param total_results Total observations reported by iNaturalist.
-        @param minimum_per_page Smallest batch size allowed after failures.
+        @param per_page Number of observations requested in one page.
         @return Number of digits to use for raw page numbers.
         """
-        maximum_page_count = max(1, (total_results + minimum_per_page - 1) // minimum_per_page)
+        maximum_page_count = max(1, (total_results + per_page - 1) // per_page)
         return len(str(maximum_page_count))
 
     def _raw_page_file_path(

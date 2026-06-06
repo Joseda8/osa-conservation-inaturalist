@@ -25,7 +25,7 @@ Example:
 data/obs/20260606/raw_data/obs_20260606_page_000001.json
 ```
 
-The page number padding is computed from the total results reported by iNaturalist and the minimum configured batch size.
+The page number padding is computed from the total results reported by iNaturalist and the requested batch size.
 
 ## Usage
 List available steps:
@@ -49,5 +49,5 @@ PYTHONPATH=src python3 src/main.py --steps download-raw-data
 Run the download step more gently for large projects:
 
 ```bash
-PYTHONPATH=src python3 src/main.py --steps download-raw-data --per-page 25 --request-cooldown 1.1 --failure-cooldown 60 --minimum-per-page 1
+PYTHONPATH=src python3 src/main.py --steps download-raw-data --per-page 25 --request-cooldown 1.1 --failure-cooldown 60
 ```

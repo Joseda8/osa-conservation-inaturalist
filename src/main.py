@@ -54,12 +54,6 @@ def _parse_arguments() -> argparse.Namespace:
         default=60.0,
         help="Seconds to wait after failed API requests before retrying.",
     )
-    argument_parser.add_argument(
-        "--minimum-per-page",
-        type=int,
-        default=1,
-        help="Smallest API batch size to use after repeated failures.",
-    )
     return argument_parser.parse_args()
 
 
@@ -105,7 +99,6 @@ def main():
         per_page=arguments.per_page,
         request_cooldown_seconds=arguments.request_cooldown,
         failure_cooldown_seconds=arguments.failure_cooldown,
-        minimum_per_page=arguments.minimum_per_page,
     )
     pipeline = Pipeline(steps=_build_steps(arguments.steps))
     pipeline.run(pipeline_context)

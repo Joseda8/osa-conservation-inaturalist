@@ -20,7 +20,6 @@ class PipelineContext:
     @param per_page Requested observation batch size.
     @param request_cooldown_seconds Seconds to wait after successful requests.
     @param failure_cooldown_seconds Seconds to wait after failed requests.
-    @param minimum_per_page Smallest batch size allowed after failures.
     @param download_summaries Download summaries created by the download step.
     """
 
@@ -29,5 +28,4 @@ class PipelineContext:
     per_page: int
     request_cooldown_seconds: float
     failure_cooldown_seconds: float
-    minimum_per_page: int
     download_summaries: list[ProjectDownloadSummary] = field(default_factory=list)
