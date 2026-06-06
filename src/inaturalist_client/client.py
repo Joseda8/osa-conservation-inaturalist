@@ -16,7 +16,7 @@ from requests.exceptions import RequestException
 from requests_cache import NEVER_EXPIRE
 from utils import LOGGER
 
-from .constants import DATA_DIR, RAW_DATA_DIR_NAME, TMP_DIR
+from .constants import DATA_DIR, RAW_DATA_DIR_NAME, RAW_PAGE_NUMBER_PADDING, TMP_DIR
 from .observation_fields import OBSERVATION_ANALYSIS_FIELDS
 from .project_config import ProjectConfig
 from .project_download_summary import ProjectDownloadSummary
@@ -82,7 +82,6 @@ class InaturalistClient(JsonFileStorage):
         current_page = 1
         downloaded_page_count = 0
         total_results = 0
-        page_number_padding = 1
         last_observation_id: int | None = None
 
         LOGGER.info(
@@ -100,10 +99,6 @@ class InaturalistClient(JsonFileStorage):
             )
             if current_page == 1:
                 total_results = int(observation_response.get("total_results", 0))
-                page_number_padding = self._get_page_number_padding(
-                    total_results=total_results,
-                    per_page=per_page,
-                )
 
             observation_results = observation_response.get("results", [])
             if not observation_results:
@@ -120,7 +115,6 @@ class InaturalistClient(JsonFileStorage):
                 project_alias=project_config.alias,
                 download_date=date_version,
                 page=current_page,
-                page_number_padding=page_number_padding,
             )
             saved_file_path = self._save_json_if_enabled(
                 raw_file_path,
@@ -137,7 +131,7 @@ class InaturalistClient(JsonFileStorage):
             if len(observation_results) < per_page:
                 break
 
-            self._sleep_after_successful_request(request_cooldown_seconds)
+            self._sleep_after_downloaded_request(request_cooldown_seconds)
             current_page += 1
 
         LOGGER.info(
@@ -232,11 +226,14 @@ class InaturalistClient(JsonFileStorage):
         observation_response["results"] = convert_all_timestamps(observation_response["results"])
         return observation_response
 
-    def _sleep_after_successful_request(self, request_cooldown_seconds: float):
-        """Pause after a successful request to reduce API pressure.
+    def _sleep_after_downloaded_request(self, request_cooldown_seconds: float):
+        """Pause after a successful API request to reduce API pressure.
 
         @param request_cooldown_seconds Seconds to wait.
         """
+        if self._session._last_response_from_cache:
+            return
+
         if request_cooldown_seconds <= 0:
             return
 
@@ -276,32 +273,20 @@ class InaturalistClient(JsonFileStorage):
         """
         return int(observation_results[-1]["id"])
 
-    def _get_page_number_padding(self, total_results: int, per_page: int) -> int:
-        """Calculate filename padding from the maximum possible raw page count.
-
-        @param total_results Total observations reported by iNaturalist.
-        @param per_page Number of observations requested in one page.
-        @return Number of digits to use for raw page numbers.
-        """
-        maximum_page_count = max(1, (total_results + per_page - 1) // per_page)
-        return len(str(maximum_page_count))
-
     def _raw_page_file_path(
         self,
         project_alias: str,
         download_date: str,
         page: int,
-        page_number_padding: int,
     ) -> Path:
         """Build the raw page JSON path relative to the data folder.
 
         @param project_alias Short local project alias.
         @param download_date Date string used for the data version.
         @param page Page number included in the file suffix.
-        @param page_number_padding Number of digits to use for raw page numbers.
         @return Relative raw page JSON path.
         """
-        file_name = f"{project_alias}_{download_date}_page_{page:0{page_number_padding}d}.json"
+        file_name = f"{project_alias}_{download_date}_page_{page:0{RAW_PAGE_NUMBER_PADDING}d}.json"
         return Path(project_alias) / download_date / RAW_DATA_DIR_NAME / file_name
 
     def _log_cache_status(self):

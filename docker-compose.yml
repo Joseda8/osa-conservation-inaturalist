@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: osa-inaturalist-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: osa_inaturalist
+      POSTGRES_USER: osa
+      POSTGRES_PASSWORD: osa
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  metabase:
+    image: metabase/metabase:latest
+    container_name: osa-inaturalist-metabase
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      MB_DB_FILE: /metabase-data/metabase.db
+    ports:
+      - "3000:3000"
+    volumes:
+      - metabase_data:/metabase-data
+
+volumes:
+  postgres_data:
+  metabase_data:
