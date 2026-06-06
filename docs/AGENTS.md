@@ -20,3 +20,4 @@ Read the `README.md` to catch up with the project. In general keep changes simpl
 - Prefix private attributes and methods with `_`.
 - Do not keep dead code or compatibility wrappers that are no longer used.
 - Keep no more than one class per file. When adding a class, create a dedicated module for it.
+- Make database schema changes through versioned SQL migrations under `db/migrations/`; do not create or change tables, indexes, or constraints with ad hoc runtime DDL.

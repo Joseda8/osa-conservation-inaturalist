@@ -1,1 +1,2 @@
 pyinaturalist==0.21.1
+psycopg[binary]==3.2.10

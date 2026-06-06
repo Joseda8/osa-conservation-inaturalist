@@ -5,5 +5,7 @@
 """
 
 from .download_raw_data_step import DownloadRawDataStep
+from .load_raw_data_to_database_step import LoadRawDataToDatabaseStep
+from .migrate_database_step import MigrateDatabaseStep
 
-__all__ = ["DownloadRawDataStep"]
+__all__ = ["DownloadRawDataStep", "LoadRawDataToDatabaseStep", "MigrateDatabaseStep"]

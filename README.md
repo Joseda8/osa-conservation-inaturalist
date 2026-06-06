@@ -27,6 +27,12 @@ data/obs/20260606/raw_data/obs_20260606_page_000001.json
 
 The page number padding is computed from the total results reported by iNaturalist and the requested batch size.
 
+### Migrate database
+Applies pending PostgreSQL migrations from `db/migrations`.
+
+### Load raw data to database
+Loads downloaded raw JSON files into PostgreSQL.
+
 ## Usage
 List available steps:
 
@@ -44,6 +50,24 @@ Run selected steps:
 
 ```bash
 PYTHONPATH=src python3 src/main.py --steps download-raw-data
+```
+
+Run database migrations:
+
+```bash
+PYTHONPATH=src python3 src/main.py --steps migrate-db
+```
+
+Load raw data into PostgreSQL:
+
+```bash
+PYTHONPATH=src python3 src/main.py --steps load-raw-data-to-db
+```
+
+Run migrations and then load raw data:
+
+```bash
+PYTHONPATH=src python3 src/main.py --steps migrate-db load-raw-data-to-db
 ```
 
 Run the download step more gently for large projects:

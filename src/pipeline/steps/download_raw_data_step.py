@@ -18,7 +18,7 @@ class DownloadRawDataStep:
         @param pipeline_context Shared pipeline state.
         """
         for project_config in pipeline_context.project_configs:
-            project_summary = pipeline_context.inaturalist_client.download_project_observations(
+            project_summary = pipeline_context.get_inaturalist_client().download_project_observations(
                 project_config,
                 per_page=pipeline_context.per_page,
                 request_cooldown_seconds=pipeline_context.request_cooldown_seconds,

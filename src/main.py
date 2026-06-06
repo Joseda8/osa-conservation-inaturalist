@@ -6,15 +6,16 @@
 
 import argparse
 
-from inaturalist_client import InaturalistClient, OSA_PROJECTS
-from inaturalist_client import ProjectDownloadSummary
+from inaturalist_client import OSA_PROJECTS, ProjectDownloadSummary
 from pipeline import Pipeline, PipelineContext
 from pipeline.pipeline_step import PipelineStep
-from pipeline.steps import DownloadRawDataStep
+from pipeline.steps import DownloadRawDataStep, LoadRawDataToDatabaseStep, MigrateDatabaseStep
 
 
 _STEP_FACTORIES = {
     DownloadRawDataStep.name: DownloadRawDataStep,
+    LoadRawDataToDatabaseStep.name: LoadRawDataToDatabaseStep,
+    MigrateDatabaseStep.name: MigrateDatabaseStep,
 }
 
 
@@ -95,7 +96,6 @@ def main():
 
     pipeline_context = PipelineContext(
         project_configs=OSA_PROJECTS,
-        inaturalist_client=InaturalistClient(),
         per_page=arguments.per_page,
         request_cooldown_seconds=arguments.request_cooldown,
         failure_cooldown_seconds=arguments.failure_cooldown,
