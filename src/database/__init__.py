@@ -7,6 +7,7 @@
 from .connection import get_database_url, open_database_connection
 from .constants import DATABASE_URL_ENV_VAR, DEFAULT_DATABASE_URL, MIGRATIONS_DIR
 from .migration_runner import MigrationRunner
+from .project_observation_reconciler import ProjectObservationReconciler
 from .raw_data_loader import RawDataLoader
 
 __all__ = [
@@ -14,6 +15,7 @@ __all__ = [
     "DEFAULT_DATABASE_URL",
     "MIGRATIONS_DIR",
     "MigrationRunner",
+    "ProjectObservationReconciler",
     "RawDataLoader",
     "get_database_url",
     "open_database_connection",

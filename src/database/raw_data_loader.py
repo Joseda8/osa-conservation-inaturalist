@@ -23,6 +23,7 @@ class RawDataLoader:
     @param database_connection Open PostgreSQL connection.
     @param project_configs Projects expected in the raw data folder.
     @param data_dir Folder containing downloaded project data.
+    @param load_date Only load raw data for this snapshot date.
     """
 
     def __init__(
@@ -30,16 +31,19 @@ class RawDataLoader:
         database_connection: Connection,
         project_configs: tuple[ProjectConfig, ...],
         data_dir: Path = DATA_DIR,
+        load_date: str | None = None,
     ):
         """Create a raw data loader.
 
         @param database_connection Open PostgreSQL connection.
         @param project_configs Projects expected in the raw data folder.
         @param data_dir Folder containing downloaded project data.
+        @param load_date Only load raw data for this snapshot date.
         """
         self._database_connection = database_connection
         self._project_configs = project_configs
         self._data_dir = data_dir
+        self._load_date = load_date
 
     def load(self) -> dict[str, int]:
         """Load all available raw JSON files into PostgreSQL.
@@ -79,6 +83,10 @@ class RawDataLoader:
         @return Raw page file paths.
         """
         project_data_dir = self._data_dir / project_alias
+        if self._load_date is not None:
+            raw_data_dir = project_data_dir / self._load_date / RAW_DATA_DIR_NAME
+            return sorted(raw_data_dir.glob(f"{project_alias}_{self._load_date}_page_*.json"))
+
         return sorted(project_data_dir.glob(f"*/{RAW_DATA_DIR_NAME}/{project_alias}_*_page_*.json"))
 
     def _load_raw_page(self, raw_page_path: Path, project_alias: str, load_counts: dict[str, int]):
@@ -422,7 +430,8 @@ class RawDataLoader:
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, now()
             )
-            ON CONFLICT (project_alias, download_date, observation_id) DO UPDATE SET
+            ON CONFLICT (project_alias, observation_id) DO UPDATE SET
+                download_date = EXCLUDED.download_date,
                 uuid = EXCLUDED.uuid,
                 uri = EXCLUDED.uri,
                 quality_grade = EXCLUDED.quality_grade,
@@ -543,7 +552,8 @@ class RawDataLoader:
                     raw_json
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (project_alias, download_date, observation_id, photo_id) DO UPDATE SET
+                ON CONFLICT (project_alias, observation_id, photo_id) DO UPDATE SET
+                    download_date = EXCLUDED.download_date,
                     url = EXCLUDED.url,
                     license_code = EXCLUDED.license_code,
                     attribution = EXCLUDED.attribution,
@@ -603,7 +613,8 @@ class RawDataLoader:
                     raw_json
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (project_alias, download_date, project_observation_id) DO UPDATE SET
+                ON CONFLICT (project_alias, project_observation_id) DO UPDATE SET
+                    download_date = EXCLUDED.download_date,
                     observation_id = EXCLUDED.observation_id,
                     uuid = EXCLUDED.uuid,
                     inat_project_id = EXCLUDED.inat_project_id,
@@ -660,7 +671,8 @@ class RawDataLoader:
                     raw_json
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (project_alias, download_date, observation_id, ofv_index) DO UPDATE SET
+                ON CONFLICT (project_alias, observation_id, ofv_index) DO UPDATE SET
+                    download_date = EXCLUDED.download_date,
                     field_id = EXCLUDED.field_id,
                     field_name = EXCLUDED.field_name,
                     value = EXCLUDED.value,

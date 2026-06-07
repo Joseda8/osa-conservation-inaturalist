@@ -12,5 +12,9 @@ tmp/
 data/
 *.json
 
+# Local PostgreSQL backup files
+db/backups/*
+!db/backups/.gitkeep
+
 # Developer notes
 DEV_NOTES.md

@@ -22,6 +22,7 @@ class PipelineContext:
     @param failure_cooldown_seconds Seconds to wait after failed requests.
     @param download_mode Raw data download mode.
     @param updated_since Only download observations updated since this time.
+    @param load_date Only load raw data for this snapshot date.
     @param inaturalist_client Client used to download iNaturalist data.
     @param download_summaries Download summaries created by the download step.
     """
@@ -32,6 +33,7 @@ class PipelineContext:
     failure_cooldown_seconds: float
     download_mode: str
     updated_since: datetime | str | None = None
+    load_date: str | None = None
     inaturalist_client: InaturalistClient | None = None
     download_summaries: list[ProjectDownloadSummary] = field(default_factory=list)
 

@@ -16,7 +16,13 @@ from requests.exceptions import RequestException
 from requests_cache import NEVER_EXPIRE
 from utils import LOGGER
 
-from .constants import DATA_DIR, RAW_DATA_DIR_NAME, RAW_PAGE_NUMBER_PADDING, TMP_DIR
+from .constants import (
+    DATA_DIR,
+    RAW_DATA_DIR_NAME,
+    RAW_PAGE_NUMBER_PADDING,
+    RECONCILE_OBSERVATION_ID_BATCH_SIZE,
+    TMP_DIR,
+)
 from .observation_fields import OBSERVATION_ANALYSIS_FIELDS
 from .project_config import ProjectConfig
 from .project_download_summary import ProjectDownloadSummary
@@ -37,6 +43,225 @@ class InaturalistClient(JsonFileStorage):
         """
         super().__init__(storage_dir=DATA_DIR, store_files=store_files)
         self._session = self._create_session()
+
+    def get_stale_observation_ids(
+        self,
+        project_config: ProjectConfig,
+        observation_ids: set[int],
+        failure_cooldown_seconds: float = 60.0,
+    ) -> set[int]:
+        """Get local observation IDs that no longer belong to a project.
+
+        @param project_config Project to inspect.
+        @param observation_ids Local observation IDs to check.
+        @param failure_cooldown_seconds Seconds to wait after failed requests.
+        @return Observation IDs that are not currently in the project.
+        """
+        stale_observation_ids: set[int] = set()
+        sorted_observation_ids = sorted(observation_ids)
+
+        LOGGER.info(
+            "Checking %s local observation IDs for project %s",
+            len(sorted_observation_ids),
+            project_config.alias,
+        )
+        total_batches = (
+            len(sorted_observation_ids) + RECONCILE_OBSERVATION_ID_BATCH_SIZE - 1
+        ) // RECONCILE_OBSERVATION_ID_BATCH_SIZE
+        for batch_start in range(
+            0,
+            len(sorted_observation_ids),
+            RECONCILE_OBSERVATION_ID_BATCH_SIZE,
+        ):
+            batch_number = (batch_start // RECONCILE_OBSERVATION_ID_BATCH_SIZE) + 1
+            observation_id_batch = sorted_observation_ids[
+                batch_start : batch_start + RECONCILE_OBSERVATION_ID_BATCH_SIZE
+            ]
+            LOGGER.info(
+                "Request batch %s/%s for project %s with %s local observation IDs",
+                batch_number,
+                total_batches,
+                project_config.alias,
+                len(observation_id_batch),
+            )
+            stale_observation_ids.update(
+                self._get_stale_observation_ids_from_batch(
+                    project_config=project_config,
+                    observation_ids=observation_id_batch,
+                    batch_number=batch_number,
+                    failure_cooldown_seconds=failure_cooldown_seconds,
+                )
+            )
+
+        LOGGER.info(
+            "Found %s stale local observation IDs for project %s",
+            len(stale_observation_ids),
+            project_config.alias,
+        )
+        return stale_observation_ids
+
+    def _get_stale_observation_ids_from_batch(
+        self,
+        project_config: ProjectConfig,
+        observation_ids: list[int],
+        batch_number: int,
+        failure_cooldown_seconds: float,
+    ) -> set[int]:
+        """Get stale IDs from one local observation ID batch.
+
+        @param project_config Project to inspect.
+        @param observation_ids Local observation IDs to check.
+        @param batch_number Reconciliation request batch number.
+        @param failure_cooldown_seconds Seconds to wait after failed requests.
+        @return IDs from the batch that are not currently in the project.
+        """
+        current_observation_count = self._count_observation_ids_in_project(
+            project_config=project_config,
+            observation_ids=observation_ids,
+            failure_cooldown_seconds=failure_cooldown_seconds,
+        )
+        LOGGER.info(
+            "Request batch %s for project %s matched %s/%s local observation IDs",
+            batch_number,
+            project_config.alias,
+            current_observation_count,
+            len(observation_ids),
+        )
+        if current_observation_count == len(observation_ids):
+            LOGGER.info(
+                "No stale observation IDs found in request batch %s for project %s",
+                batch_number,
+                project_config.alias,
+            )
+            return set()
+
+        expected_stale_count = len(observation_ids) - current_observation_count
+        stale_observation_ids = self._find_stale_observation_ids(
+            project_config=project_config,
+            observation_ids=observation_ids,
+            expected_stale_count=expected_stale_count,
+            batch_number=batch_number,
+            split_depth=0,
+            failure_cooldown_seconds=failure_cooldown_seconds,
+        )
+        LOGGER.info(
+            "Request batch %s for project %s found %s stale observation IDs",
+            batch_number,
+            project_config.alias,
+            len(stale_observation_ids),
+        )
+        return stale_observation_ids
+
+    def _find_stale_observation_ids(
+        self,
+        project_config: ProjectConfig,
+        observation_ids: list[int],
+        expected_stale_count: int,
+        batch_number: int,
+        split_depth: int,
+        failure_cooldown_seconds: float,
+    ) -> set[int]:
+        """Find stale observation IDs by splitting a mismatched ID batch.
+
+        @param project_config Project to inspect.
+        @param observation_ids Local observation IDs to check.
+        @param expected_stale_count Number of stale IDs still expected in this branch.
+        @param batch_number Reconciliation request batch number.
+        @param split_depth Current binary search depth.
+        @param failure_cooldown_seconds Seconds to wait after failed requests.
+        @return IDs from the batch that are not currently in the project.
+        """
+        if expected_stale_count <= 0:
+            return set()
+
+        if expected_stale_count == len(observation_ids):
+            LOGGER.info(
+                "Found %s stale observation IDs in request batch %s for project %s",
+                len(observation_ids),
+                batch_number,
+                project_config.alias,
+            )
+            return set(observation_ids)
+
+        current_observation_count = self._count_observation_ids_in_project(
+            project_config=project_config,
+            observation_ids=observation_ids,
+            failure_cooldown_seconds=failure_cooldown_seconds,
+        )
+        LOGGER.info(
+            "Narrowing request batch %s for project %s: %s/%s IDs matched at split depth %s",
+            batch_number,
+            project_config.alias,
+            current_observation_count,
+            len(observation_ids),
+            split_depth,
+        )
+        actual_stale_count = len(observation_ids) - current_observation_count
+        if current_observation_count == len(observation_ids):
+            return set()
+
+        if current_observation_count == 0:
+            LOGGER.info(
+                "Found %s stale observation IDs in request batch %s for project %s",
+                len(observation_ids),
+                batch_number,
+                project_config.alias,
+            )
+            return set(observation_ids)
+
+        if len(observation_ids) == 1:
+            LOGGER.info(
+                "Found stale observation ID %s in request batch %s for project %s",
+                observation_ids[0],
+                batch_number,
+                project_config.alias,
+            )
+            return {observation_ids[0]}
+
+        middle_index = len(observation_ids) // 2
+        left_observation_ids = observation_ids[:middle_index]
+        right_observation_ids = observation_ids[middle_index:]
+        left_current_observation_count = self._count_observation_ids_in_project(
+            project_config=project_config,
+            observation_ids=left_observation_ids,
+            failure_cooldown_seconds=failure_cooldown_seconds,
+        )
+        left_stale_count = len(left_observation_ids) - left_current_observation_count
+        LOGGER.info(
+            "Narrowing request batch %s for project %s: %s/%s left-branch IDs matched at split depth %s",
+            batch_number,
+            project_config.alias,
+            left_current_observation_count,
+            len(left_observation_ids),
+            split_depth + 1,
+        )
+
+        stale_observation_ids = self._find_stale_observation_ids(
+            project_config=project_config,
+            observation_ids=left_observation_ids,
+            expected_stale_count=left_stale_count,
+            batch_number=batch_number,
+            split_depth=split_depth + 1,
+            failure_cooldown_seconds=failure_cooldown_seconds,
+        )
+        if len(stale_observation_ids) >= actual_stale_count:
+            LOGGER.info(
+                "Found all %s expected stale IDs for request batch %s at split depth %s",
+                actual_stale_count,
+                batch_number,
+                split_depth,
+            )
+            return stale_observation_ids
+
+        right_stale_count = actual_stale_count - len(stale_observation_ids)
+        return stale_observation_ids | self._find_stale_observation_ids(
+            project_config=project_config,
+            observation_ids=right_observation_ids,
+            expected_stale_count=right_stale_count,
+            batch_number=batch_number,
+            split_depth=split_depth + 1,
+            failure_cooldown_seconds=failure_cooldown_seconds,
+        )
 
     def _create_session(self) -> _TrackingClientSession:
         """Create a pyinaturalist session with project-local storage.
@@ -192,6 +417,37 @@ class InaturalistClient(JsonFileStorage):
             failure_cooldown_seconds=failure_cooldown_seconds,
             force_refresh=force_refresh,
         )
+
+    def _count_observation_ids_in_project(
+        self,
+        project_config: ProjectConfig,
+        observation_ids: list[int],
+        failure_cooldown_seconds: float,
+    ) -> int:
+        """Count how many local observation IDs are still in a project.
+
+        @param project_config Project to inspect.
+        @param observation_ids Local observation IDs to check.
+        @param failure_cooldown_seconds Seconds to wait after failed requests.
+        @return Number of given observation IDs still in the project.
+        """
+        request_parameters: dict[str, Any] = {
+            "id": observation_ids,
+            "project_id": project_config.slug,
+            "fields": {
+                "id": True,
+            },
+            "order": "asc",
+            "order_by": "id",
+            "per_page": 1,
+        }
+
+        observation_response = self._get_observations_with_retry(
+            request_parameters=request_parameters,
+            failure_cooldown_seconds=failure_cooldown_seconds,
+            force_refresh=True,
+        )
+        return int(observation_response.get("total_results", 0))
 
     def _get_observations_with_retry(
         self,

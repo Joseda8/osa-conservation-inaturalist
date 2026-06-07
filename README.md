@@ -33,6 +33,9 @@ Applies pending PostgreSQL migrations from `db/migrations`.
 ### Load raw data to database
 Loads downloaded raw JSON files into PostgreSQL.
 
+### Reconcile project observations
+Checks current iNaturalist project membership and deletes local normalized rows for observations that no longer belong to the configured projects. Raw JSON page snapshots are kept unchanged.
+
 ## Usage
 List available steps:
 
@@ -76,10 +79,22 @@ Load raw data into PostgreSQL:
 PYTHONPATH=src python3 src/main.py --steps load-raw-data-to-db
 ```
 
+Load raw data for one snapshot date:
+
+```bash
+PYTHONPATH=src python3 src/main.py --steps load-raw-data-to-db --load-date 20260607
+```
+
 Run migrations and then load raw data:
 
 ```bash
 PYTHONPATH=src python3 src/main.py --steps migrate-db load-raw-data-to-db
+```
+
+Delete normalized observations that no longer belong to the configured iNaturalist projects:
+
+```bash
+PYTHONPATH=src python3 src/main.py --steps reconcile-project-observations
 ```
 
 Run the download step more gently for large projects:

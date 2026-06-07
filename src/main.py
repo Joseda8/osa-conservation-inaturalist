@@ -10,13 +10,19 @@ from datetime import date, datetime, time, timedelta
 from inaturalist_client import OSA_PROJECTS, ProjectDownloadSummary
 from pipeline import Pipeline, PipelineContext
 from pipeline.pipeline_step import PipelineStep
-from pipeline.steps import DownloadRawDataStep, LoadRawDataToDatabaseStep, MigrateDatabaseStep
+from pipeline.steps import (
+    DownloadRawDataStep,
+    LoadRawDataToDatabaseStep,
+    MigrateDatabaseStep,
+    ReconcileProjectObservationsStep,
+)
 
 
 _STEP_FACTORIES = {
     DownloadRawDataStep.name: DownloadRawDataStep,
     LoadRawDataToDatabaseStep.name: LoadRawDataToDatabaseStep,
     MigrateDatabaseStep.name: MigrateDatabaseStep,
+    ReconcileProjectObservationsStep.name: ReconcileProjectObservationsStep,
 }
 
 _DEFAULT_STEP_NAMES = [
@@ -73,6 +79,11 @@ def _parse_arguments() -> argparse.Namespace:
         default=None,
         help="Override incremental cutoff as an ISO datetime. Defaults to previous local midnight.",
     )
+    argument_parser.add_argument(
+        "--load-date",
+        default=None,
+        help="Only load raw JSON files for this snapshot date, formatted as YYYYMMDD.",
+    )
     return argument_parser.parse_args()
 
 
@@ -122,6 +133,19 @@ def _get_incremental_updated_since(arguments: argparse.Namespace) -> datetime | 
     return datetime.combine(previous_local_date, time.min, tzinfo=local_timezone)
 
 
+def _validate_load_date(load_date: str | None) -> str | None:
+    """Validate the optional raw data load date.
+
+    @param load_date Date string formatted as YYYYMMDD.
+    @return Validated load date, or None.
+    """
+    if load_date is None:
+        return None
+
+    datetime.strptime(load_date, "%Y%m%d")
+    return load_date
+
+
 def main():
     """Run the configured OSA data pipeline."""
     arguments = _parse_arguments()
@@ -136,6 +160,7 @@ def main():
         failure_cooldown_seconds=arguments.failure_cooldown,
         download_mode=arguments.download_mode,
         updated_since=_get_incremental_updated_since(arguments),
+        load_date=_validate_load_date(arguments.load_date),
     )
     pipeline = Pipeline(steps=_build_steps(arguments.steps))
     pipeline.run(pipeline_context)

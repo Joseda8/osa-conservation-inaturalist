@@ -19,4 +19,8 @@ class LoadRawDataToDatabaseStep:
         @param pipeline_context Shared pipeline state.
         """
         with open_database_connection() as database_connection:
-            RawDataLoader(database_connection, pipeline_context.project_configs).load()
+            RawDataLoader(
+                database_connection,
+                pipeline_context.project_configs,
+                load_date=pipeline_context.load_date,
+            ).load()
