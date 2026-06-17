@@ -141,7 +141,6 @@ class InaturalistClient(JsonFileStorage):
             observation_ids=observation_ids,
             expected_stale_count=expected_stale_count,
             batch_number=batch_number,
-            split_depth=0,
             failure_cooldown_seconds=failure_cooldown_seconds,
         )
         LOGGER.info(
@@ -158,110 +157,74 @@ class InaturalistClient(JsonFileStorage):
         observation_ids: list[int],
         expected_stale_count: int,
         batch_number: int,
-        split_depth: int,
         failure_cooldown_seconds: float,
     ) -> set[int]:
-        """Find stale observation IDs by splitting a mismatched ID batch.
+        """Find stale observation IDs by iteratively splitting a mismatched ID batch.
 
         @param project_config Project to inspect.
         @param observation_ids Local observation IDs to check.
         @param expected_stale_count Number of stale IDs still expected in this branch.
         @param batch_number Reconciliation request batch number.
-        @param split_depth Current binary search depth.
         @param failure_cooldown_seconds Seconds to wait after failed requests.
         @return IDs from the batch that are not currently in the project.
         """
-        if expected_stale_count <= 0:
-            return set()
+        stale_observation_ids: set[int] = set()
+        search_stack = [(observation_ids, expected_stale_count, 0)]
 
-        if expected_stale_count == len(observation_ids):
+        while search_stack and len(stale_observation_ids) < expected_stale_count:
+            branch_observation_ids, branch_stale_count, split_depth = search_stack.pop()
+            if branch_stale_count <= 0:
+                continue
+
+            if branch_stale_count == len(branch_observation_ids):
+                LOGGER.info(
+                    "Found %s stale observation IDs in request batch %s for project %s",
+                    len(branch_observation_ids),
+                    batch_number,
+                    project_config.alias,
+                )
+                stale_observation_ids.update(branch_observation_ids)
+                continue
+
+            if len(branch_observation_ids) == 1:
+                LOGGER.info(
+                    "Found stale observation ID %s in request batch %s for project %s",
+                    branch_observation_ids[0],
+                    batch_number,
+                    project_config.alias,
+                )
+                stale_observation_ids.add(branch_observation_ids[0])
+                continue
+
+            middle_index = len(branch_observation_ids) // 2
+            left_observation_ids = branch_observation_ids[:middle_index]
+            right_observation_ids = branch_observation_ids[middle_index:]
+            left_current_observation_count = self._count_observation_ids_in_project(
+                project_config=project_config,
+                observation_ids=left_observation_ids,
+                failure_cooldown_seconds=failure_cooldown_seconds,
+            )
+            left_stale_count = len(left_observation_ids) - left_current_observation_count
+            right_stale_count = branch_stale_count - left_stale_count
             LOGGER.info(
-                "Found %s stale observation IDs in request batch %s for project %s",
-                len(observation_ids),
+                "Narrowing request batch %s for project %s: %s/%s left-branch IDs matched at split depth %s",
                 batch_number,
                 project_config.alias,
+                left_current_observation_count,
+                len(left_observation_ids),
+                split_depth + 1,
             )
-            return set(observation_ids)
 
-        current_observation_count = self._count_observation_ids_in_project(
-            project_config=project_config,
-            observation_ids=observation_ids,
-            failure_cooldown_seconds=failure_cooldown_seconds,
-        )
-        LOGGER.info(
-            "Narrowing request batch %s for project %s: %s/%s IDs matched at split depth %s",
-            batch_number,
-            project_config.alias,
-            current_observation_count,
-            len(observation_ids),
-            split_depth,
-        )
-        actual_stale_count = len(observation_ids) - current_observation_count
-        if current_observation_count == len(observation_ids):
-            return set()
+            search_stack.append((right_observation_ids, right_stale_count, split_depth + 1))
+            search_stack.append((left_observation_ids, left_stale_count, split_depth + 1))
 
-        if current_observation_count == 0:
+        if len(stale_observation_ids) >= expected_stale_count:
             LOGGER.info(
-                "Found %s stale observation IDs in request batch %s for project %s",
-                len(observation_ids),
+                "Found all %s expected stale IDs for request batch %s",
+                expected_stale_count,
                 batch_number,
-                project_config.alias,
             )
-            return set(observation_ids)
-
-        if len(observation_ids) == 1:
-            LOGGER.info(
-                "Found stale observation ID %s in request batch %s for project %s",
-                observation_ids[0],
-                batch_number,
-                project_config.alias,
-            )
-            return {observation_ids[0]}
-
-        middle_index = len(observation_ids) // 2
-        left_observation_ids = observation_ids[:middle_index]
-        right_observation_ids = observation_ids[middle_index:]
-        left_current_observation_count = self._count_observation_ids_in_project(
-            project_config=project_config,
-            observation_ids=left_observation_ids,
-            failure_cooldown_seconds=failure_cooldown_seconds,
-        )
-        left_stale_count = len(left_observation_ids) - left_current_observation_count
-        LOGGER.info(
-            "Narrowing request batch %s for project %s: %s/%s left-branch IDs matched at split depth %s",
-            batch_number,
-            project_config.alias,
-            left_current_observation_count,
-            len(left_observation_ids),
-            split_depth + 1,
-        )
-
-        stale_observation_ids = self._find_stale_observation_ids(
-            project_config=project_config,
-            observation_ids=left_observation_ids,
-            expected_stale_count=left_stale_count,
-            batch_number=batch_number,
-            split_depth=split_depth + 1,
-            failure_cooldown_seconds=failure_cooldown_seconds,
-        )
-        if len(stale_observation_ids) >= actual_stale_count:
-            LOGGER.info(
-                "Found all %s expected stale IDs for request batch %s at split depth %s",
-                actual_stale_count,
-                batch_number,
-                split_depth,
-            )
-            return stale_observation_ids
-
-        right_stale_count = actual_stale_count - len(stale_observation_ids)
-        return stale_observation_ids | self._find_stale_observation_ids(
-            project_config=project_config,
-            observation_ids=right_observation_ids,
-            expected_stale_count=right_stale_count,
-            batch_number=batch_number,
-            split_depth=split_depth + 1,
-            failure_cooldown_seconds=failure_cooldown_seconds,
-        )
+        return stale_observation_ids
 
     def _create_session(self) -> _TrackingClientSession:
         """Create a pyinaturalist session with project-local storage.

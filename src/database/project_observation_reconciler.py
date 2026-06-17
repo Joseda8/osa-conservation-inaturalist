@@ -82,7 +82,6 @@ class ProjectObservationReconciler:
             self._delete_orphan_observers()
             self._delete_orphan_taxa()
 
-        deleted_observation_count = -1
         LOGGER.info(
             "Deleted %s stale observations for project %s",
             deleted_observation_count,
