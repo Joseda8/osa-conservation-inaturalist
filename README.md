@@ -37,7 +37,7 @@ Loads downloaded raw JSON files into PostgreSQL.
 Checks current iNaturalist project membership and deletes local normalized rows for observations that no longer belong to the configured projects. Raw JSON page snapshots are kept unchanged.
 
 ### Download trends
-Downloads compact observed-date monthly aggregate observation trends for `obs`, `abs`, and Costa Rica into PostgreSQL. This uses iNaturalist aggregate endpoints instead of downloading all Costa Rica observations.
+Downloads compact observed-date monthly aggregate trends for `obs`, `abs`, and Costa Rica into PostgreSQL. This includes observation histograms, species counts, and iconic taxa species counts. This uses iNaturalist aggregate endpoints instead of downloading all Costa Rica observations.
 
 The trend step can download all historical monthly buckets, or update from a completed starting month through the most recent completed month.
 

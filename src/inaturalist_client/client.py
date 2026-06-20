@@ -23,6 +23,7 @@ from .constants import (
     RAW_PAGE_NUMBER_PADDING,
     RECONCILE_OBSERVATION_ID_BATCH_SIZE,
     TMP_DIR,
+    TREND_COUNT_PER_PAGE,
 )
 from .observation_fields import OBSERVATION_ANALYSIS_FIELDS
 from .project_config import ProjectConfig
@@ -31,6 +32,11 @@ from .storage import JsonFileStorage
 from .tracking_client_session import _TrackingClientSession
 from .trend_record import TrendRecord
 from .trend_region_config import TrendRegionConfig
+
+
+_TREND_TAXON_FIELDS = (
+    "(count:!t,taxon:(id:!t,name:!t,preferred_common_name:!t,rank:!t,iconic_taxon_name:!t))"
+)
 
 
 class InaturalistClient(JsonFileStorage):
@@ -113,6 +119,156 @@ class InaturalistClient(JsonFileStorage):
             trend_region_config.key,
         )
         return trend_records
+
+    def get_monthly_species_count_trends(
+        self,
+        trend_region_config: TrendRegionConfig,
+        period_start: date,
+        period_end: date,
+        failure_cooldown_seconds: float = 60.0,
+    ) -> list[TrendRecord]:
+        """Get monthly species count trend rows for a region.
+
+        @param trend_region_config Region to query.
+        @param period_start First date in the monthly trend period.
+        @param period_end Last date in the monthly trend period.
+        @param failure_cooldown_seconds Seconds to wait after failed requests.
+        @return Monthly species count trend records.
+        """
+        return self._get_monthly_taxon_count_trends(
+            trend_region_config=trend_region_config,
+            period_start=period_start,
+            period_end=period_end,
+            endpoint="observations/species_counts",
+            metric_name="species_observation_count",
+            dimension_type="species_taxon",
+            failure_cooldown_seconds=failure_cooldown_seconds,
+        )
+
+    def get_monthly_iconic_taxa_count_trends(
+        self,
+        trend_region_config: TrendRegionConfig,
+        period_start: date,
+        period_end: date,
+        failure_cooldown_seconds: float = 60.0,
+    ) -> list[TrendRecord]:
+        """Get monthly iconic taxon count trend rows for a region.
+
+        @param trend_region_config Region to query.
+        @param period_start First date in the monthly trend period.
+        @param period_end Last date in the monthly trend period.
+        @param failure_cooldown_seconds Seconds to wait after failed requests.
+        @return Monthly iconic taxon count trend records.
+        """
+        return self._get_monthly_taxon_count_trends(
+            trend_region_config=trend_region_config,
+            period_start=period_start,
+            period_end=period_end,
+            endpoint="observations/iconic_taxa_species_counts",
+            metric_name="iconic_taxon_species_count",
+            dimension_type="iconic_taxon",
+            failure_cooldown_seconds=failure_cooldown_seconds,
+        )
+
+    def _get_monthly_taxon_count_trends(
+        self,
+        trend_region_config: TrendRegionConfig,
+        period_start: date,
+        period_end: date,
+        endpoint: str,
+        metric_name: str,
+        dimension_type: str,
+        failure_cooldown_seconds: float,
+    ) -> list[TrendRecord]:
+        """Get monthly taxon count trend rows for a region.
+
+        @param trend_region_config Region to query.
+        @param period_start First date in the monthly trend period.
+        @param period_end Last date in the monthly trend period.
+        @param endpoint iNaturalist aggregate endpoint.
+        @param metric_name Metric name to store.
+        @param dimension_type Dimension type to store.
+        @param failure_cooldown_seconds Seconds to wait after failed requests.
+        @return Monthly taxon count trend records.
+        """
+        source_params = {
+            **trend_region_config.request_params,
+            "d1": period_start.isoformat(),
+            "d2": period_end.isoformat(),
+            "fields": _TREND_TAXON_FIELDS,
+            "per_page": TREND_COUNT_PER_PAGE,
+        }
+        trend_records: list[TrendRecord] = []
+        for response_row in self._get_paginated_trend_count_rows(
+            endpoint=endpoint,
+            source_params=source_params,
+            failure_cooldown_seconds=failure_cooldown_seconds,
+        ):
+            taxon = response_row.get("taxon", {})
+            taxon_id = taxon.get("id")
+            if taxon_id is None:
+                continue
+
+            taxon_name = taxon.get("name") or str(taxon_id)
+            dimension_label = taxon.get("preferred_common_name") or taxon_name
+            trend_records.append(
+                TrendRecord(
+                    region_config=trend_region_config,
+                    metric_name=metric_name,
+                    period_type="month",
+                    period_start=period_start,
+                    period_end=period_end,
+                    value=int(response_row.get("count", 0)),
+                    source_endpoint=endpoint,
+                    source_params=source_params,
+                    raw_json=response_row,
+                    dimension_type=dimension_type,
+                    dimension_id=str(taxon_id),
+                    dimension_label=dimension_label,
+                )
+            )
+
+        LOGGER.info(
+            "Downloaded %s %s trend rows for %s from %s to %s",
+            len(trend_records),
+            metric_name,
+            trend_region_config.key,
+            period_start,
+            period_end,
+        )
+        return trend_records
+
+    def _get_paginated_trend_count_rows(
+        self,
+        endpoint: str,
+        source_params: dict[str, Any],
+        failure_cooldown_seconds: float,
+    ) -> list[dict[str, Any]]:
+        """Get all rows from a paginated trends count endpoint.
+
+        @param endpoint iNaturalist aggregate endpoint.
+        @param source_params Base API parameters.
+        @param failure_cooldown_seconds Seconds to wait after failed requests.
+        @return Count response rows.
+        """
+        response_rows: list[dict[str, Any]] = []
+        page_number = 1
+        while True:
+            request_params = {**source_params, "page": page_number}
+            trend_count_response = self._get_api_response_with_retry(
+                endpoint=endpoint,
+                request_parameters=request_params,
+                failure_cooldown_seconds=failure_cooldown_seconds,
+                force_refresh=True,
+            )
+            page_rows = trend_count_response.get("results", [])
+            response_rows.extend(page_rows)
+
+            total_results = int(trend_count_response.get("total_results", len(response_rows)))
+            if len(response_rows) >= total_results or not page_rows:
+                return response_rows
+
+            page_number += 1
 
     def _get_month_end_date(self, period_start: date) -> date:
         """Get the last date of the month containing a period start date.

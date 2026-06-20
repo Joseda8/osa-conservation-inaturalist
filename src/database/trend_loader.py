@@ -56,18 +56,29 @@ class TrendLoader:
                 period_type,
                 period_start,
                 period_end,
+                dimension_type,
+                dimension_id,
+                dimension_label,
                 value,
                 source_endpoint,
                 source_params,
                 raw_json,
                 downloaded_at
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
-            ON CONFLICT (region_key, metric_name, period_type, period_start)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
+            ON CONFLICT (
+                region_key,
+                metric_name,
+                period_type,
+                period_start,
+                dimension_type,
+                dimension_id
+            )
             DO UPDATE SET
                 region_type = EXCLUDED.region_type,
                 region_label = EXCLUDED.region_label,
                 period_end = EXCLUDED.period_end,
+                dimension_label = EXCLUDED.dimension_label,
                 value = EXCLUDED.value,
                 source_endpoint = EXCLUDED.source_endpoint,
                 source_params = EXCLUDED.source_params,
@@ -82,6 +93,9 @@ class TrendLoader:
                 trend_record.period_type,
                 trend_record.period_start,
                 trend_record.period_end,
+                trend_record.dimension_type,
+                trend_record.dimension_id,
+                trend_record.dimension_label,
                 trend_record.value,
                 trend_record.source_endpoint,
                 Jsonb(trend_record.source_params),
