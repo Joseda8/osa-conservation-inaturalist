@@ -4,6 +4,7 @@
 @brief Provides object-oriented access to iNaturalist downloads.
 """
 
+from calendar import monthrange
 from datetime import date, datetime
 from pathlib import Path
 from time import sleep
@@ -28,6 +29,8 @@ from .project_config import ProjectConfig
 from .project_download_summary import ProjectDownloadSummary
 from .storage import JsonFileStorage
 from .tracking_client_session import _TrackingClientSession
+from .trend_record import TrendRecord
+from .trend_region_config import TrendRegionConfig
 
 
 class InaturalistClient(JsonFileStorage):
@@ -43,6 +46,82 @@ class InaturalistClient(JsonFileStorage):
         """
         super().__init__(storage_dir=DATA_DIR, store_files=store_files)
         self._session = self._create_session()
+
+    def get_monthly_observation_trends(
+        self,
+        trend_region_config: TrendRegionConfig,
+        period_start: date | None = None,
+        period_end: date | None = None,
+        failure_cooldown_seconds: float = 60.0,
+    ) -> list[TrendRecord]:
+        """Get monthly observation count trends for a region.
+
+        @param trend_region_config Region to query.
+        @param period_start Optional first date in the trend period.
+        @param period_end Optional last date in the trend period.
+        @param failure_cooldown_seconds Seconds to wait after failed requests.
+        @return Monthly observation count trend records.
+        """
+        source_endpoint = "observations/histogram"
+        source_params = {
+            **trend_region_config.request_params,
+            "date_field": "observed",
+            "interval": "month",
+        }
+        if period_start is not None:
+            source_params["d1"] = period_start.isoformat()
+        if period_end is not None:
+            source_params["d2"] = period_end.isoformat()
+
+        LOGGER.info(
+            "Downloading observed monthly observation trends for %s from %s to %s",
+            trend_region_config.key,
+            period_start or "the beginning",
+            period_end or "now",
+        )
+        histogram_response = self._get_api_response_with_retry(
+            endpoint=source_endpoint,
+            request_parameters=source_params,
+            failure_cooldown_seconds=failure_cooldown_seconds,
+            force_refresh=True,
+        )
+        month_counts = histogram_response.get("results", {}).get("month", {})
+        trend_records = []
+        for period_start_text, metric_value in sorted(month_counts.items()):
+            period_start = datetime.strptime(period_start_text, "%Y-%m-%d").date()
+            period_end = self._get_month_end_date(period_start)
+            trend_records.append(
+                TrendRecord(
+                    region_config=trend_region_config,
+                    metric_name="observation_count",
+                    period_type="month",
+                    period_start=period_start,
+                    period_end=period_end,
+                    value=int(metric_value),
+                    source_endpoint=source_endpoint,
+                    source_params=source_params,
+                    raw_json={
+                        "period_start": period_start_text,
+                        "period_end": period_end.isoformat(),
+                        "value": metric_value,
+                    },
+                )
+            )
+        LOGGER.info(
+            "Downloaded %s monthly observation trend rows for %s",
+            len(trend_records),
+            trend_region_config.key,
+        )
+        return trend_records
+
+    def _get_month_end_date(self, period_start: date) -> date:
+        """Get the last date of the month containing a period start date.
+
+        @param period_start First date in a monthly period.
+        @return Last date in the same month.
+        """
+        last_day = monthrange(period_start.year, period_start.month)[1]
+        return date(period_start.year, period_start.month, last_day)
 
     def get_stale_observation_ids(
         self,
@@ -439,6 +518,39 @@ class InaturalistClient(JsonFileStorage):
                     "Retrying observation request with the same per_page=%s",
                     request_parameters["per_page"],
                 )
+
+    def _get_api_response_with_retry(
+        self,
+        endpoint: str,
+        request_parameters: dict[str, Any],
+        failure_cooldown_seconds: float,
+        force_refresh: bool,
+    ) -> dict[str, Any]:
+        """Fetch an iNaturalist API response, retrying failed requests.
+
+        @param endpoint API endpoint path relative to API_V2.
+        @param request_parameters iNaturalist API request parameters.
+        @param failure_cooldown_seconds Seconds to wait after failed requests.
+        @param force_refresh Whether to bypass cached responses.
+        @return API response dictionary.
+        """
+        while True:
+            try:
+                return post(
+                    f"{API_V2}/{endpoint}",
+                    headers={"X-HTTP-Method-Override": "GET"},
+                    json=request_parameters,
+                    session=self._session,
+                    force_refresh=force_refresh,
+                ).json()
+            except RequestException as request_error:
+                LOGGER.warning(
+                    "API request failed for %s: %s",
+                    endpoint,
+                    request_error,
+                )
+                self._sleep_after_failed_request(failure_cooldown_seconds)
+                LOGGER.warning("Retrying API request for %s", endpoint)
 
     def _get_project_observations_response(
         self,

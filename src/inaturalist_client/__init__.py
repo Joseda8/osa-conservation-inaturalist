@@ -5,10 +5,12 @@
 """
 
 from .client import InaturalistClient
-from .constants import OSA_PROJECTS
+from .constants import OSA_PROJECTS, TREND_REGIONS
 from .project_config import ProjectConfig
 from .project_download_summary import ProjectDownloadSummary
 from .storage import JsonFileStorage
+from .trend_record import TrendRecord
+from .trend_region_config import TrendRegionConfig
 
 __all__ = [
     "InaturalistClient",
@@ -16,4 +18,7 @@ __all__ = [
     "OSA_PROJECTS",
     "ProjectConfig",
     "ProjectDownloadSummary",
+    "TREND_REGIONS",
+    "TrendRecord",
+    "TrendRegionConfig",
 ]

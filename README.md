@@ -36,6 +36,11 @@ Loads downloaded raw JSON files into PostgreSQL.
 ### Reconcile project observations
 Checks current iNaturalist project membership and deletes local normalized rows for observations that no longer belong to the configured projects. Raw JSON page snapshots are kept unchanged.
 
+### Download trends
+Downloads compact observed-date monthly aggregate observation trends for `obs`, `abs`, and Costa Rica into PostgreSQL. This uses iNaturalist aggregate endpoints instead of downloading all Costa Rica observations.
+
+The trend step can download all historical monthly buckets, or update from a completed starting month through the most recent completed month.
+
 ## Usage
 List available steps:
 
@@ -95,6 +100,18 @@ Delete normalized observations that no longer belong to the configured iNaturali
 
 ```bash
 PYTHONPATH=src python3 src/main.py --steps reconcile-project-observations
+```
+
+Download historical monthly aggregate trends:
+
+```bash
+PYTHONPATH=src python3 src/main.py --steps migrate-db download-trends --trend-mode historical
+```
+
+Download monthly aggregate trends since a completed month:
+
+```bash
+PYTHONPATH=src python3 src/main.py --steps migrate-db download-trends --trend-mode since --trend-year 2026 --trend-month 1
 ```
 
 Run the download step more gently for large projects:
