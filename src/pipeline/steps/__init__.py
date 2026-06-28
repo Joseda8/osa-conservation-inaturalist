@@ -6,6 +6,7 @@
 
 from .download_raw_data_step import DownloadRawDataStep
 from .download_trends_step import DownloadTrendsStep
+from .enrich_taxonomy_step import EnrichTaxonomyStep
 from .load_raw_data_to_database_step import LoadRawDataToDatabaseStep
 from .migrate_database_step import MigrateDatabaseStep
 from .reconcile_project_observations_step import ReconcileProjectObservationsStep
@@ -13,6 +14,7 @@ from .reconcile_project_observations_step import ReconcileProjectObservationsSte
 __all__ = [
     "DownloadRawDataStep",
     "DownloadTrendsStep",
+    "EnrichTaxonomyStep",
     "LoadRawDataToDatabaseStep",
     "MigrateDatabaseStep",
     "ReconcileProjectObservationsStep",

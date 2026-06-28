@@ -36,6 +36,9 @@ Loads downloaded raw JSON files into PostgreSQL.
 ### Reconcile project observations
 Checks current iNaturalist project membership and deletes local normalized rows for observations that no longer belong to the configured projects. Raw JSON page snapshots are kept unchanged.
 
+### Enrich taxonomy
+Completes the `taxa` table with metadata for every ID referenced by stored taxon lineages. Missing mode requests only absent lineage nodes. Full mode refreshes all stored taxa and then completes any newly discovered lineage nodes.
+
 ### Download trends
 Downloads compact observed-date monthly aggregate trends for `obs`, `abs`, and Costa Rica into PostgreSQL. This includes observation histograms, species counts, and iconic taxa species counts. This uses iNaturalist aggregate endpoints instead of downloading all Costa Rica observations.
 
@@ -100,6 +103,18 @@ Delete normalized observations that no longer belong to the configured iNaturali
 
 ```bash
 PYTHONPATH=src python3 src/main.py --steps reconcile-project-observations
+```
+
+Complete missing taxonomy lineage nodes:
+
+```bash
+PYTHONPATH=src python3 src/main.py --steps enrich-taxonomy
+```
+
+Refresh all stored taxa and complete their lineages:
+
+```bash
+PYTHONPATH=src python3 src/main.py --steps enrich-taxonomy --taxonomy-mode full
 ```
 
 Download historical monthly aggregate trends:

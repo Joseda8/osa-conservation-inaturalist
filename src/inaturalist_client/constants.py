@@ -28,6 +28,9 @@ RECONCILE_OBSERVATION_ID_BATCH_SIZE = 25000
 # Number of aggregate count rows requested per trends API page.
 TREND_COUNT_PER_PAGE = 500
 
+# Maximum number of IDs accepted by one iNaturalist taxa request.
+TAXON_ENRICHMENT_BATCH_SIZE = 30
+
 # Project config for the OSA Biodiversity Survey.
 OSA_BIODIVERSITY_SURVEY_PROJECT = ProjectConfig(
     alias="obs",

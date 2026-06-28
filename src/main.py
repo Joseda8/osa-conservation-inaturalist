@@ -14,6 +14,7 @@ from pipeline.pipeline_step import PipelineStep
 from pipeline.steps import (
     DownloadRawDataStep,
     DownloadTrendsStep,
+    EnrichTaxonomyStep,
     LoadRawDataToDatabaseStep,
     MigrateDatabaseStep,
     ReconcileProjectObservationsStep,
@@ -23,6 +24,7 @@ from pipeline.steps import (
 _STEP_FACTORIES = {
     DownloadRawDataStep.name: DownloadRawDataStep,
     DownloadTrendsStep.name: DownloadTrendsStep,
+    EnrichTaxonomyStep.name: EnrichTaxonomyStep,
     LoadRawDataToDatabaseStep.name: LoadRawDataToDatabaseStep,
     MigrateDatabaseStep.name: MigrateDatabaseStep,
     ReconcileProjectObservationsStep.name: ReconcileProjectObservationsStep,
@@ -105,6 +107,12 @@ def _parse_arguments() -> argparse.Namespace:
         choices=("since", "historical"),
         default="since",
         help="Download trends since a starting month or the full available history.",
+    )
+    argument_parser.add_argument(
+        "--taxonomy-mode",
+        choices=("missing", "full"),
+        default="missing",
+        help="Enrich missing taxonomy nodes or refresh all stored taxa.",
     )
     parsed_arguments = argument_parser.parse_args()
     _validate_trend_arguments(argument_parser, parsed_arguments)
@@ -245,6 +253,7 @@ def main():
         trend_mode=arguments.trend_mode,
         trend_period_start=getattr(arguments, "trend_period_start", None),
         trend_period_end=getattr(arguments, "trend_period_end", None),
+        taxonomy_mode=arguments.taxonomy_mode,
     )
     pipeline = Pipeline(steps=_build_steps(arguments.steps))
     pipeline.run(pipeline_context)

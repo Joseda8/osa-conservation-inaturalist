@@ -26,6 +26,7 @@ class PipelineContext:
     @param trend_mode Trend download mode.
     @param trend_period_start First date of the monthly trend period range to download.
     @param trend_period_end Last date of the monthly trend period range to download.
+    @param taxonomy_mode Whether to enrich missing taxa or refresh all taxa.
     @param inaturalist_client Client used to download iNaturalist data.
     @param download_summaries Download summaries created by the download step.
     """
@@ -40,6 +41,7 @@ class PipelineContext:
     trend_mode: str = "since"
     trend_period_start: date | None = None
     trend_period_end: date | None = None
+    taxonomy_mode: str = "missing"
     inaturalist_client: InaturalistClient | None = None
     download_summaries: list[ProjectDownloadSummary] = field(default_factory=list)
 

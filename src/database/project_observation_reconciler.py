@@ -263,7 +263,7 @@ class ProjectObservationReconciler:
         )
 
     def _delete_orphan_taxa(self):
-        """Delete taxa not referenced by any local observation."""
+        """Delete taxa not referenced by observations or their taxon lineages."""
         self._database_connection.execute(
             """
             DELETE FROM taxa AS taxon_rows
@@ -272,5 +272,15 @@ class ProjectObservationReconciler:
                 FROM observations AS observation_rows
                 WHERE observation_rows.taxon_id = taxon_rows.taxon_id
             )
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM taxa AS observed_taxa
+                    WHERE observed_taxa.ancestor_ids @> jsonb_build_array(taxon_rows.taxon_id)
+                        AND EXISTS (
+                            SELECT 1
+                            FROM observations AS observation_rows
+                            WHERE observation_rows.taxon_id = observed_taxa.taxon_id
+                        )
+                )
             """
         )

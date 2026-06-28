@@ -4,6 +4,7 @@ Read the `README.md` to catch up with the project. In general keep changes simpl
 ## Development Constraints
 - Do not execute project code unless the user explicitly asks for it.
 - It is okay to inspect files and make small static checks when useful, but avoid commands like `src/main.py` without direct permission.
+- Do not add unit or integration tests unless the user explicitly requests them.
 - Keep temporary/cache files inside this project. Prefer `./tmp/` over `/tmp` or user/global cache directories.
 - Avoid touching host-level filesystem locations unless the user explicitly asks.
 - Use the existing virtual environment when needed: `.venv/`.

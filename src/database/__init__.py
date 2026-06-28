@@ -9,6 +9,7 @@ from .constants import DATABASE_URL_ENV_VAR, DEFAULT_DATABASE_URL, MIGRATIONS_DI
 from .migration_runner import MigrationRunner
 from .project_observation_reconciler import ProjectObservationReconciler
 from .raw_data_loader import RawDataLoader
+from .taxon_repository import TaxonRepository
 from .trend_loader import TrendLoader
 
 __all__ = [
@@ -18,6 +19,7 @@ __all__ = [
     "MigrationRunner",
     "ProjectObservationReconciler",
     "RawDataLoader",
+    "TaxonRepository",
     "TrendLoader",
     "get_database_url",
     "open_database_connection",

@@ -16,6 +16,8 @@ from psycopg import Connection
 from psycopg.types.json import Jsonb
 from utils import LOGGER
 
+from .taxon_repository import TaxonRepository
+
 
 class RawDataLoader:
     """Loads downloaded raw iNaturalist pages into PostgreSQL.
@@ -44,6 +46,7 @@ class RawDataLoader:
         self._project_configs = project_configs
         self._data_dir = data_dir
         self._load_date = load_date
+        self._taxon_repository = TaxonRepository(database_connection)
 
     def load(self) -> dict[str, int]:
         """Load all available raw JSON files into PostgreSQL.
@@ -240,7 +243,8 @@ class RawDataLoader:
         observer_id = observer_json.get("id")
 
         if taxon_id is not None:
-            self._upsert_taxon(taxon_json, load_counts)
+            self._taxon_repository.upsert_taxa([taxon_json])
+            load_counts["taxa"] += 1
         if observer_id is not None:
             self._upsert_observer(observer_json, load_counts)
 
@@ -255,74 +259,6 @@ class RawDataLoader:
         self._load_observation_photos(project_alias, download_date, observation_id, observation_json, load_counts)
         self._load_project_observations(project_alias, download_date, observation_id, observation_json, load_counts)
         self._load_observation_field_values(project_alias, download_date, observation_id, observation_json, load_counts)
-
-    def _upsert_taxon(self, taxon_json: dict[str, Any], load_counts: dict[str, int]):
-        """Upsert taxon data.
-
-        @param taxon_json Taxon JSON object.
-        @param load_counts Processed row counts by table.
-        """
-        self._database_connection.execute(
-            """
-            INSERT INTO taxa (
-                taxon_id,
-                scientific_name,
-                common_name,
-                rank,
-                rank_level,
-                parent_id,
-                ancestor_ids,
-                ancestry,
-                iconic_taxon_id,
-                iconic_taxon_name,
-                is_active,
-                native,
-                introduced,
-                endemic,
-                threatened,
-                extinct,
-                raw_json
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (taxon_id) DO UPDATE SET
-                scientific_name = EXCLUDED.scientific_name,
-                common_name = EXCLUDED.common_name,
-                rank = EXCLUDED.rank,
-                rank_level = EXCLUDED.rank_level,
-                parent_id = EXCLUDED.parent_id,
-                ancestor_ids = EXCLUDED.ancestor_ids,
-                ancestry = EXCLUDED.ancestry,
-                iconic_taxon_id = EXCLUDED.iconic_taxon_id,
-                iconic_taxon_name = EXCLUDED.iconic_taxon_name,
-                is_active = EXCLUDED.is_active,
-                native = EXCLUDED.native,
-                introduced = EXCLUDED.introduced,
-                endemic = EXCLUDED.endemic,
-                threatened = EXCLUDED.threatened,
-                extinct = EXCLUDED.extinct,
-                raw_json = EXCLUDED.raw_json
-            """,
-            (
-                taxon_json["id"],
-                taxon_json.get("name"),
-                taxon_json.get("preferred_common_name"),
-                taxon_json.get("rank"),
-                taxon_json.get("rank_level"),
-                taxon_json.get("parent_id"),
-                Jsonb(taxon_json.get("ancestor_ids")),
-                taxon_json.get("ancestry"),
-                taxon_json.get("iconic_taxon_id"),
-                taxon_json.get("iconic_taxon_name"),
-                taxon_json.get("is_active"),
-                taxon_json.get("native"),
-                taxon_json.get("introduced"),
-                taxon_json.get("endemic"),
-                taxon_json.get("threatened"),
-                taxon_json.get("extinct"),
-                Jsonb(taxon_json),
-            ),
-        )
-        load_counts["taxa"] += 1
 
     def _upsert_observer(self, observer_json: dict[str, Any], load_counts: dict[str, int]):
         """Upsert observer data.

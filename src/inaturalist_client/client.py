@@ -29,6 +29,7 @@ from .observation_fields import OBSERVATION_ANALYSIS_FIELDS
 from .project_config import ProjectConfig
 from .project_download_summary import ProjectDownloadSummary
 from .storage import JsonFileStorage
+from .taxon_fields import TAXON_ENRICHMENT_FIELDS
 from .tracking_client_session import _TrackingClientSession
 from .trend_record import TrendRecord
 from .trend_region_config import TrendRegionConfig
@@ -278,6 +279,50 @@ class InaturalistClient(JsonFileStorage):
         """
         last_day = monthrange(period_start.year, period_start.month)[1]
         return date(period_start.year, period_start.month, last_day)
+
+    def get_taxa(
+        self,
+        taxon_ids: list[int],
+        request_cooldown_seconds: float = 1.1,
+        failure_cooldown_seconds: float = 60.0,
+        force_refresh: bool = False,
+    ) -> list[dict[str, Any]]:
+        """Get taxon metadata for one enrichment batch.
+
+        @param taxon_ids iNaturalist taxon IDs to fetch.
+        @param request_cooldown_seconds Seconds to wait after a successful request.
+        @param failure_cooldown_seconds Seconds to wait after failed requests.
+        @param force_refresh Whether to bypass cached responses.
+        @return Taxon API response rows.
+        """
+        if not taxon_ids:
+            return []
+
+        requested_taxon_ids = sorted(set(taxon_ids))
+        endpoint_ids = ",".join(str(taxon_id) for taxon_id in requested_taxon_ids)
+        taxon_response = self._get_api_response_with_retry(
+            endpoint=f"taxa/{endpoint_ids}",
+            request_parameters={"fields": TAXON_ENRICHMENT_FIELDS},
+            failure_cooldown_seconds=failure_cooldown_seconds,
+            force_refresh=force_refresh,
+        )
+        taxon_rows = taxon_response.get("results", [])
+        returned_taxon_ids = {
+            int(taxon_row["id"])
+            for taxon_row in taxon_rows
+            if taxon_row.get("id") is not None
+        }
+        missing_taxon_ids = sorted(set(requested_taxon_ids) - returned_taxon_ids)
+        if missing_taxon_ids:
+            raise RuntimeError(
+                "iNaturalist omitted requested taxon IDs: "
+                + ", ".join(str(taxon_id) for taxon_id in missing_taxon_ids)
+            )
+
+        LOGGER.info("Downloaded %s taxonomy rows", len(taxon_rows))
+        self._log_cache_status("Taxonomy batch")
+        self._sleep_after_downloaded_request(request_cooldown_seconds)
+        return taxon_rows
 
     def get_stale_observation_ids(
         self,
@@ -700,6 +745,19 @@ class InaturalistClient(JsonFileStorage):
                     force_refresh=force_refresh,
                 ).json()
             except RequestException as request_error:
+                response = request_error.response
+                if (
+                    response is not None
+                    and 400 <= response.status_code < 500
+                    and response.status_code != 429
+                ):
+                    LOGGER.error(
+                        "API request was rejected for %s: %s",
+                        endpoint,
+                        response.text,
+                    )
+                    raise
+
                 LOGGER.warning(
                     "API request failed for %s: %s",
                     endpoint,
@@ -810,9 +868,12 @@ class InaturalistClient(JsonFileStorage):
         file_name = f"{project_alias}_{download_date}_page_{page:0{RAW_PAGE_NUMBER_PADDING}d}.json"
         return Path(project_alias) / download_date / RAW_DATA_DIR_NAME / file_name
 
-    def _log_cache_status(self):
-        """Log whether the last API response came from cache."""
+    def _log_cache_status(self, resource_name: str = "Observation page"):
+        """Log whether the last API response came from cache.
+
+        @param resource_name Name of the downloaded resource.
+        """
         if self._session._last_response_from_cache:
-            LOGGER.info("Observation page was loaded from cache")
+            LOGGER.info("%s was loaded from cache", resource_name)
         else:
-            LOGGER.info("Observation page was downloaded from the iNaturalist API")
+            LOGGER.info("%s was downloaded from the iNaturalist API", resource_name)
