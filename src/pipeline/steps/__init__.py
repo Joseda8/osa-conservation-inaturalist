@@ -10,6 +10,7 @@ from .enrich_taxonomy_step import EnrichTaxonomyStep
 from .load_raw_data_to_database_step import LoadRawDataToDatabaseStep
 from .migrate_database_step import MigrateDatabaseStep
 from .reconcile_project_observations_step import ReconcileProjectObservationsStep
+from .analyze_and_upload_to_drive_step import AnalyzeAndUploadToDriveStep
 
 __all__ = [
     "DownloadRawDataStep",
@@ -18,4 +19,5 @@ __all__ = [
     "LoadRawDataToDatabaseStep",
     "MigrateDatabaseStep",
     "ReconcileProjectObservationsStep",
+    "AnalyzeAndUploadToDriveStep",
 ]

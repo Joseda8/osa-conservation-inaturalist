@@ -19,6 +19,7 @@ from pipeline.steps import (
     LoadRawDataToDatabaseStep,
     MigrateDatabaseStep,
     ReconcileProjectObservationsStep,
+    AnalyzeAndUploadToDriveStep,
 )
 
 
@@ -29,6 +30,7 @@ _STEP_FACTORIES = {
     LoadRawDataToDatabaseStep.name: LoadRawDataToDatabaseStep,
     MigrateDatabaseStep.name: MigrateDatabaseStep,
     ReconcileProjectObservationsStep.name: ReconcileProjectObservationsStep,
+    AnalyzeAndUploadToDriveStep.name: AnalyzeAndUploadToDriveStep,
 }
 
 def _parse_arguments() -> argparse.Namespace:

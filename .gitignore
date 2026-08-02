@@ -1,6 +1,11 @@
 # Local Python environment
 .venv/
 
+# Local environment variables and credentials.
+.env
+.secrets/*
+!.secrets/.gitkeep
+
 # Python bytecode and caches
 __pycache__/
 *.py[cod]

@@ -29,6 +29,9 @@ HISTORICAL_LOAD_PIPELINE_NAME = "historical-load"
 # Steps that download, load, reconcile, and enrich a data update.
 DATA_UPDATE_PIPELINE_STEP_NAMES = ("download-raw-data", "download-trends", "load-raw-data-to-db", "reconcile-project-observations", "enrich-taxonomy")
 
+# Initial proof-of-concept query exported to Google Drive as CSV.
+OBSERVATIONS_CSV_EXPORT_QUERY = "SELECT * FROM observations LIMIT 5;"
+
 # Whether the command-line interface lists steps instead of running the pipeline.
 DEFAULT_LIST_STEPS = False
 

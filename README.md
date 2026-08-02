@@ -1,8 +1,7 @@
 # OSA Conservation - iNaturalist Analyzer
 This project provides tools to analyze OSA Conservation data from iNaturalist and other sources.
 
-## Projects
-The default pipeline downloads raw observation data for:
+Raw observation data for these projects is downloaded:
 
 - `obs`: The OSA Biodiversity Survey.
 - `abs`: The AmistOSA Biodiversity Survey.
@@ -86,6 +85,15 @@ Run selected steps:
 ```bash
 PYTHONPATH=src python3 src/main.py --steps download-raw-data
 ```
+
+Run the initial database analysis and upload its CSV export to Google Drive:
+
+```bash
+# Save a rotated service-account credential at .secrets/google-service-account.json.
+PYTHONPATH=src python3 src/main.py --steps analyze-and-upload-to-drive
+```
+
+The step runs `SELECT * FROM observations LIMIT 5;`, writes the result to an in-memory CSV with headers, and creates or replaces `observations.csv` in the configured Google Drive folder. Set `GOOGLE_DRIVE_UPLOAD_FOLDER_ID` in the ignored `.env` file to the ID of OSA's `processed-data` folder. Share that folder with the service-account email as an Editor, enable the Google Drive API for that account, and never commit its credential JSON. The default credential path is ignored by Git. Set `GOOGLE_SERVICE_ACCOUNT_JSON` or `GOOGLE_SERVICE_ACCOUNT_JSON_PATH` to use a different credential source; set `GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME` to override the file name.
 
 Run a full raw data download:
 

@@ -9,7 +9,7 @@ import os
 import psycopg
 from psycopg import Connection
 
-from .constants import DATABASE_URL_ENV_VAR, DEFAULT_DATABASE_URL
+from .constants import DATABASE_URL_ENV_VAR
 
 
 def get_database_url() -> str:
@@ -17,7 +17,10 @@ def get_database_url() -> str:
 
     @return Database connection string.
     """
-    return os.environ.get(DATABASE_URL_ENV_VAR, DEFAULT_DATABASE_URL)
+    database_url = os.environ.get(DATABASE_URL_ENV_VAR)
+    if not database_url:
+        raise RuntimeError(f"Missing required environment variable: {DATABASE_URL_ENV_VAR}")
+    return database_url
 
 
 def open_database_connection() -> Connection:
