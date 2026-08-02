@@ -18,6 +18,10 @@ __pycache__/
 # Downloaded/generated data files
 data/
 *.json
+!web/package.json
+!web/package-lock.json
+!web/public/data/
+!web/public/data/.gitkeep
 
 # Local PostgreSQL backup files
 db/backups/*
