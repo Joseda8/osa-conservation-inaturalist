@@ -20,12 +20,20 @@ jobs:
           python-version: "3.12"
           cache: pip
 
+      - name: Restore Python environment
+        id: python-environment
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ runner.os }}-python-3.12-venv-${{ hashFiles('requirements.txt') }}
+
       - name: Install dependencies
-        run: python -m pip install --requirement requirements.txt
+        if: steps.python-environment.outputs.cache-hit != 'true'
+        run: python -m venv .venv && .venv/bin/python -m pip install --requirement requirements.txt
 
       - name: Refresh GitHub Pages source data
         env:
           GOOGLE_DRIVE_UPLOAD_FOLDER_ID: ${{ vars.GOOGLE_DRIVE_UPLOAD_FOLDER_ID }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           PYTHONPATH: src
-        run: python src/main.py --steps refresh-github-pages
+        run: .venv/bin/python src/main.py --steps refresh-github-pages
