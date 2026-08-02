@@ -6,6 +6,11 @@
 .secrets/*
 !.secrets/.gitkeep
 
+# Frontend dependencies and generated static site files.
+web/node_modules/
+web/dist/
+web/public/data/*.csv
+
 # Python bytecode and caches
 __pycache__/
 *.py[cod]

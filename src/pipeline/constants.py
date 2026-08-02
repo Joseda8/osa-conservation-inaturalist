@@ -4,6 +4,8 @@
 @brief Defines defaults used by the command-line pipeline interface.
 """
 
+from pathlib import Path
+
 
 # Pipeline steps run when the --steps argument is omitted.
 DEFAULT_PIPELINE_STEP_NAMES = ("download-raw-data", "migrate-db", "load-raw-data-to-db")
@@ -31,6 +33,9 @@ DATA_UPDATE_PIPELINE_STEP_NAMES = ("download-raw-data", "download-trends", "load
 
 # Initial proof-of-concept query exported to Google Drive as CSV.
 OBSERVATIONS_CSV_EXPORT_QUERY = "SELECT * FROM observations LIMIT 5;"
+
+# Generated CSV path consumed by the GitHub Pages React build.
+GITHUB_PAGES_OBSERVATIONS_CSV_PATH = Path("web") / "public" / "data" / "observations.csv"
 
 # Whether the command-line interface lists steps instead of running the pipeline.
 DEFAULT_LIST_STEPS = False

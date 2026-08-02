@@ -97,7 +97,7 @@ The step runs `SELECT * FROM observations LIMIT 5;`, writes the result to an in-
 
 ## GitHub Actions
 
-The manual **Refresh GitHub Pages** workflow will refresh OSA's GitHub Pages site from Drive data. Its current first step reads `observations.csv` and prints its content in the workflow log. Before running it, add `GOOGLE_DRIVE_UPLOAD_FOLDER_ID` as an Actions variable and the complete service-account JSON as an Actions secret named `GOOGLE_SERVICE_ACCOUNT_JSON`. The CSV content is visible to anyone who can view the workflow log.
+The manual **Refresh GitHub Pages** workflow downloads `observations.csv`, builds the React site, and deploys it to GitHub Pages. Before running it, add `GOOGLE_DRIVE_UPLOAD_FOLDER_ID` as an Actions variable and the complete service-account JSON as an Actions secret named `GOOGLE_SERVICE_ACCOUNT_JSON`. The deployed CSV data is public, so it must contain only information suitable for public release.
 
 Run a full raw data download:
 
