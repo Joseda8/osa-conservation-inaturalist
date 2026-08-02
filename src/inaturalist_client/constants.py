@@ -10,11 +10,14 @@ from .project_config import ProjectConfig
 from .trend_region_config import TrendRegionConfig
 
 
-# Project-local folder for generated cache and temporary files.
-TMP_DIR = Path("tmp")
-
 # Project-local folder for downloaded data files.
 DATA_DIR = Path("data")
+
+# Folder for pyinaturalist cache and rate-limit files under the project data root.
+CACHE_DIR = DATA_DIR / "cache"
+
+# Folder for raw project downloads under the project data root.
+RAW_DOWNLOADS_DIR_NAME = "raw"
 
 # Folder name for raw API page responses inside each project version.
 RAW_DATA_DIR_NAME = "raw_data"
@@ -45,9 +48,6 @@ DEFAULT_FAILURE_COOLDOWN_SECONDS = 60.0
 
 # Whether downloaded API pages are stored as JSON files by default.
 DEFAULT_STORE_FILES = True
-
-# First page number used by the iNaturalist API.
-FIRST_API_PAGE_NUMBER = 1
 
 # Value used when an API result count is absent or no results have been processed.
 EMPTY_API_RESULT_COUNT = 0

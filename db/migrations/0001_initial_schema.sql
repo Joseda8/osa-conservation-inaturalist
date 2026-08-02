@@ -15,7 +15,6 @@ CREATE TABLE taxa (
     rank_level NUMERIC,
     parent_id BIGINT,
     ancestor_ids JSONB,
-    ancestry TEXT,
     iconic_taxon_id BIGINT,
     iconic_taxon_name TEXT,
     is_active BOOLEAN,
@@ -42,8 +41,6 @@ CREATE TABLE observations (
     project_alias TEXT NOT NULL REFERENCES projects(alias),
     download_date DATE NOT NULL,
     observation_id BIGINT NOT NULL,
-    uuid UUID,
-    uri TEXT,
     quality_grade TEXT,
     species_guess TEXT,
     observed_on DATE,
@@ -73,8 +70,6 @@ CREATE TABLE observations (
     identifications_count INTEGER,
     num_identification_agreements INTEGER,
     num_identification_disagreements INTEGER,
-    comments_count INTEGER,
-    faves_count INTEGER,
     taxon_id BIGINT REFERENCES taxa(taxon_id),
     observer_id BIGINT REFERENCES observers(observer_id),
     loaded_from TEXT NOT NULL,
@@ -96,36 +91,6 @@ CREATE TABLE observation_photos (
     loaded_from TEXT NOT NULL,
     loaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (project_alias, observation_id, photo_id),
-    FOREIGN KEY (project_alias, observation_id)
-        REFERENCES observations(project_alias, observation_id)
-);
-
-CREATE TABLE project_observations (
-    project_alias TEXT NOT NULL,
-    download_date DATE NOT NULL,
-    project_observation_id BIGINT NOT NULL,
-    observation_id BIGINT NOT NULL,
-    uuid UUID,
-    inat_project_id BIGINT,
-    preferences_json JSONB,
-    loaded_from TEXT NOT NULL,
-    loaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    PRIMARY KEY (project_alias, project_observation_id),
-    FOREIGN KEY (project_alias, observation_id)
-        REFERENCES observations(project_alias, observation_id)
-);
-
-CREATE TABLE observation_field_values (
-    project_alias TEXT NOT NULL,
-    download_date DATE NOT NULL,
-    observation_id BIGINT NOT NULL,
-    ofv_index INTEGER NOT NULL,
-    field_id BIGINT,
-    field_name TEXT,
-    value TEXT,
-    loaded_from TEXT NOT NULL,
-    loaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    PRIMARY KEY (project_alias, observation_id, ofv_index),
     FOREIGN KEY (project_alias, observation_id)
         REFERENCES observations(project_alias, observation_id)
 );
@@ -175,9 +140,6 @@ CREATE INDEX idx_observations_latitude_longitude
 
 CREATE INDEX idx_taxa_iconic_taxon_name
     ON taxa(iconic_taxon_name);
-
-CREATE INDEX idx_observation_field_values_field_name
-    ON observation_field_values(field_name);
 
 CREATE INDEX idx_trends_metric_period
     ON trends(metric_name, period_type, period_start, period_end);

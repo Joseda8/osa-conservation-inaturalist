@@ -15,21 +15,7 @@ SELECT
 FROM observations
 WHERE download_date = DATE :'snapshot_date';
 
-WITH deleted_field_values AS (
-    DELETE FROM observation_field_values AS field_values
-    USING target_snapshot_observations AS targets
-    WHERE field_values.project_alias = targets.project_alias
-        AND field_values.observation_id = targets.observation_id
-    RETURNING field_values.project_alias
-),
-deleted_project_observations AS (
-    DELETE FROM project_observations AS project_observation_rows
-    USING target_snapshot_observations AS targets
-    WHERE project_observation_rows.project_alias = targets.project_alias
-        AND project_observation_rows.observation_id = targets.observation_id
-    RETURNING project_observation_rows.project_alias
-),
-deleted_photos AS (
+WITH deleted_photos AS (
     DELETE FROM observation_photos AS photos
     USING target_snapshot_observations AS targets
     WHERE photos.project_alias = targets.project_alias
@@ -61,18 +47,7 @@ deleted_orphan_taxa AS (
     )
     RETURNING taxon_id
 )
-SELECT
-    'observation_field_values' AS deleted_from,
-    project_alias,
-    COUNT(*) AS rows
-FROM deleted_field_values
-GROUP BY project_alias
-UNION ALL
-SELECT 'project_observations', project_alias, COUNT(*)
-FROM deleted_project_observations
-GROUP BY project_alias
-UNION ALL
-SELECT 'observation_photos', project_alias, COUNT(*)
+SELECT 'observation_photos' AS deleted_from, project_alias, COUNT(*) AS rows
 FROM deleted_photos
 GROUP BY project_alias
 UNION ALL

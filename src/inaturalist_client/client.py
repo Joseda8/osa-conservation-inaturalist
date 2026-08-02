@@ -19,13 +19,13 @@ from utils import LOGGER
 
 from .constants import (
     COUNT_REQUEST_PER_PAGE,
+    CACHE_DIR,
     DATA_DIR,
     DEFAULT_FAILURE_COOLDOWN_SECONDS,
     DEFAULT_PROJECT_OBSERVATIONS_PER_PAGE,
     DEFAULT_REQUEST_COOLDOWN_SECONDS,
     DEFAULT_STORE_FILES,
     EMPTY_API_RESULT_COUNT,
-    FIRST_API_PAGE_NUMBER,
     FIRST_BATCH_OFFSET,
     FIRST_CLIENT_ERROR_STATUS_CODE,
     FIRST_OBSERVATION_RESULT_INDEX,
@@ -37,11 +37,11 @@ from .constants import (
     MINIMUM_OBSERVATIONS_PER_PAGE,
     MONTHRANGE_LAST_DAY_INDEX,
     RAW_DATA_DIR_NAME,
+    RAW_DOWNLOADS_DIR_NAME,
     RAW_PAGE_NUMBER_FILL_CHARACTER,
     RAW_PAGE_NUMBER_PADDING,
     RECONCILIATION_BRANCH_DIVISOR,
     RECONCILE_OBSERVATION_ID_BATCH_SIZE,
-    TMP_DIR,
     TOO_MANY_REQUESTS_STATUS_CODE,
     TREND_COUNT_PER_PAGE,
     TREND_TAXON_FIELDS,
@@ -241,7 +241,7 @@ class InaturalistClient(JsonFileStorage):
         @return Count response rows.
         """
         response_rows: list[dict[str, Any]] = []
-        page_number = FIRST_API_PAGE_NUMBER
+        page_number = 1
         while True:
             request_params = {**source_params, "page": page_number}
             trend_count_response = self._get_api_response_with_retry(
@@ -449,15 +449,15 @@ class InaturalistClient(JsonFileStorage):
 
         @return A configured pyinaturalist ClientSession.
         """
-        TMP_DIR.mkdir(exist_ok=True)
-        LOGGER.debug("Creating pyinaturalist session with cache directory: %s", TMP_DIR)
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        LOGGER.debug("Creating pyinaturalist session with cache directory: %s", CACHE_DIR)
         return _TrackingClientSession(
-            cache_file=TMP_DIR / "pyinat.db",
+            cache_file=CACHE_DIR / "pyinat.db",
             cache_control=False,
             expire_after=NEVER_EXPIRE,
             urls_expire_after={"*": NEVER_EXPIRE},
-            ratelimit_path=str(TMP_DIR / "pyinat_rate.db"),
-            lock_path=str(TMP_DIR / "pyinat.lock"),
+            ratelimit_path=str(CACHE_DIR / "pyinat_rate.db"),
+            lock_path=str(CACHE_DIR / "pyinat.lock"),
             allowable_methods=("GET", "HEAD", "POST"),
         )
 
@@ -486,7 +486,7 @@ class InaturalistClient(JsonFileStorage):
         """
         date_version = self._format_download_date(download_date)
         saved_file_paths: list[Path] = []
-        current_page = FIRST_API_PAGE_NUMBER
+        current_page = 1
         downloaded_page_count = EMPTY_API_RESULT_COUNT
         total_results = EMPTY_API_RESULT_COUNT
         # The final observation ID from each page is the cursor for the next API request.
@@ -499,7 +499,7 @@ class InaturalistClient(JsonFileStorage):
         while True:
             observation_response = self._download_project_observation_page(project_config=project_config, id_above=last_observation_id, per_page=per_page, failure_cooldown_seconds=failure_cooldown_seconds, updated_since=updated_since, force_refresh=force_refresh)
             # The API reports the project total with the first page response.
-            if current_page == FIRST_API_PAGE_NUMBER:
+            if current_page == 1:
                 total_results = int(observation_response.get("total_results", EMPTY_API_RESULT_COUNT))
 
             observation_results = observation_response.get("results", [])
@@ -747,7 +747,7 @@ class InaturalistClient(JsonFileStorage):
         @return Relative raw page JSON path.
         """
         file_name = f"{project_alias}_{download_date}_page_{page:{RAW_PAGE_NUMBER_FILL_CHARACTER}{RAW_PAGE_NUMBER_PADDING}d}.json"
-        return Path(project_alias) / download_date / RAW_DATA_DIR_NAME / file_name
+        return Path(RAW_DOWNLOADS_DIR_NAME) / project_alias / download_date / RAW_DATA_DIR_NAME / file_name
 
     def _log_cache_status(self, resource_name: str = "Observation page"):
         """Log whether the last API response came from cache.

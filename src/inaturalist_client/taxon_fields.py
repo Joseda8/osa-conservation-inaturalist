@@ -14,7 +14,6 @@ TAXON_ENRICHMENT_FIELDS = {
     "rank_level": True,
     "parent_id": True,
     "ancestor_ids": True,
-    "ancestry": True,
     "iconic_taxon_id": True,
     "iconic_taxon_name": True,
     "is_active": True,

@@ -5,7 +5,7 @@ Read the `README.md` to catch up with the project. In general keep changes simpl
 - Do not execute project code unless the user explicitly asks for it.
 - It is okay to inspect files and make small static checks when useful, but avoid commands like `src/main.py` without direct permission.
 - Do not add unit or integration tests unless the user explicitly requests them.
-- Keep temporary/cache files inside this project. Prefer `./tmp/` over `/tmp` or user/global cache directories.
+- Keep temporary/cache files inside `data/cache/`; do not use `/tmp` or user/global cache directories.
 - Avoid touching host-level filesystem locations unless the user explicitly asks.
 - Use the existing virtual environment when needed: `.venv/`.
 - Dependencies are listed in `requirements.txt`.
@@ -17,7 +17,7 @@ Read the `README.md` to catch up with the project. In general keep changes simpl
 - Define command-line argument defaults in `src/pipeline/constants.py` with a brief explanatory comment.
 - Define operational constants in their corresponding package `constants.py` file with a brief explanatory comment; do not use magic numbers.
 - Prefer clear, minimal code over helper layers or abstractions unless explicitly asked.
-- For pyinaturalist cache/rate-limit files, configure `ClientSession` to use paths under `tmp/`.
+- For pyinaturalist cache/rate-limit files, configure `ClientSession` to use paths under `data/cache/`.
 - Avoid meaningless variable names like `f` or `data`; use descriptive names such as `output_file` or `observation_response`.
 - Add concise Python docstrings for modules and functions. Doxygen-style tags such as `@file`, `@brief`, `@param`, and `@return` are welcome when they clarify intent.
 - Add brief comments above constants to explain their purpose. Do not put these comments beside the code on the same line.

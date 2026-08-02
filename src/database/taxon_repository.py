@@ -79,7 +79,6 @@ class TaxonRepository:
                     rank_level,
                     parent_id,
                     ancestor_ids,
-                    ancestry,
                     iconic_taxon_id,
                     iconic_taxon_name,
                     is_active,
@@ -91,7 +90,7 @@ class TaxonRepository:
                     loaded_from,
                     loaded_at
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
                 ON CONFLICT (taxon_id) DO UPDATE SET
                     scientific_name = EXCLUDED.scientific_name,
                     common_name = EXCLUDED.common_name,
@@ -99,7 +98,6 @@ class TaxonRepository:
                     rank_level = EXCLUDED.rank_level,
                     parent_id = EXCLUDED.parent_id,
                     ancestor_ids = EXCLUDED.ancestor_ids,
-                    ancestry = EXCLUDED.ancestry,
                     iconic_taxon_id = EXCLUDED.iconic_taxon_id,
                     iconic_taxon_name = EXCLUDED.iconic_taxon_name,
                     is_active = EXCLUDED.is_active,
@@ -119,7 +117,6 @@ class TaxonRepository:
                     taxon_json.get("rank_level"),
                     taxon_json.get("parent_id"),
                     Jsonb(taxon_json.get("ancestor_ids")),
-                    taxon_json.get("ancestry"),
                     taxon_json.get("iconic_taxon_id"),
                     taxon_json.get("iconic_taxon_name"),
                     taxon_json.get("is_active"),

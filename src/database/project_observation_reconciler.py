@@ -81,8 +81,6 @@ class ProjectObservationReconciler:
         @param stale_observation_ids Stale local observation IDs.
         @return Number of deleted observations.
         """
-        self._delete_stale_observation_field_values(project_alias, stale_observation_ids)
-        self._delete_stale_project_observations(project_alias, stale_observation_ids)
         self._delete_stale_observation_photos(project_alias, stale_observation_ids)
         deleted_observation_rows = self._database_connection.execute(
             """
@@ -94,44 +92,6 @@ class ProjectObservationReconciler:
             (project_alias, stale_observation_ids),
         ).fetchall()
         return len(deleted_observation_rows)
-
-    def _delete_stale_observation_field_values(
-        self,
-        project_alias: str,
-        stale_observation_ids: list[int],
-    ):
-        """Delete stale observation field values for a project.
-
-        @param project_alias Local project alias.
-        @param stale_observation_ids Stale local observation IDs.
-        """
-        self._database_connection.execute(
-            """
-            DELETE FROM observation_field_values AS field_values
-            WHERE field_values.project_alias = %s
-                AND field_values.observation_id = ANY(%s)
-            """,
-            (project_alias, stale_observation_ids),
-        )
-
-    def _delete_stale_project_observations(
-        self,
-        project_alias: str,
-        stale_observation_ids: list[int],
-    ):
-        """Delete stale project observation relations for a project.
-
-        @param project_alias Local project alias.
-        @param stale_observation_ids Stale local observation IDs.
-        """
-        self._database_connection.execute(
-            """
-            DELETE FROM project_observations AS project_observation_rows
-            WHERE project_observation_rows.project_alias = %s
-                AND project_observation_rows.observation_id = ANY(%s)
-            """,
-            (project_alias, stale_observation_ids),
-        )
 
     def _delete_stale_observation_photos(
         self,

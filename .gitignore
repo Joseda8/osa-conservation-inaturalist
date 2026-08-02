@@ -5,9 +5,6 @@
 __pycache__/
 *.py[cod]
 
-# Project-local temporary files and pyinaturalist cache
-tmp/
-
 # Downloaded/generated data files
 data/
 *.json

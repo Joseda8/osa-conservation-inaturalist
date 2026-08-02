@@ -10,7 +10,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from inaturalist_client.constants import DATA_DIR, RAW_DATA_DIR_NAME
+from inaturalist_client.constants import DATA_DIR, RAW_DATA_DIR_NAME, RAW_DOWNLOADS_DIR_NAME
 from inaturalist_client.project_config import ProjectConfig
 from psycopg import Connection
 from psycopg.types.json import Jsonb
@@ -74,8 +74,6 @@ class RawDataLoader:
             "taxa": 0,
             "observers": 0,
             "observation_photos": 0,
-            "project_observations": 0,
-            "observation_field_values": 0,
         }
 
     def _get_raw_page_paths(self, project_alias: str) -> list[Path]:
@@ -84,7 +82,7 @@ class RawDataLoader:
         @param project_alias Local project alias.
         @return Raw page file paths.
         """
-        project_data_dir = self._data_dir / project_alias
+        project_data_dir = self._data_dir / RAW_DOWNLOADS_DIR_NAME / project_alias
         if self._load_date is not None:
             raw_data_dir = project_data_dir / self._load_date / RAW_DATA_DIR_NAME
             return sorted(raw_data_dir.glob(f"{project_alias}_{self._load_date}_page_*.json"))
@@ -197,22 +195,6 @@ class RawDataLoader:
             observation_json,
             load_counts,
         )
-        self._load_project_observations(
-            project_alias,
-            download_date,
-            loaded_from,
-            observation_id,
-            observation_json,
-            load_counts,
-        )
-        self._load_observation_field_values(
-            project_alias,
-            download_date,
-            loaded_from,
-            observation_id,
-            observation_json,
-            load_counts,
-        )
 
     def _upsert_observer(
         self,
@@ -286,8 +268,6 @@ class RawDataLoader:
                 project_alias,
                 download_date,
                 observation_id,
-                uuid,
-                uri,
                 quality_grade,
                 species_guess,
                 observed_on,
@@ -317,8 +297,6 @@ class RawDataLoader:
                 identifications_count,
                 num_identification_agreements,
                 num_identification_disagreements,
-                comments_count,
-                faves_count,
                 taxon_id,
                 observer_id,
                 loaded_from,
@@ -328,12 +306,10 @@ class RawDataLoader:
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, now()
+                %s, %s, %s, %s, %s, now()
             )
             ON CONFLICT (project_alias, observation_id) DO UPDATE SET
                 download_date = EXCLUDED.download_date,
-                uuid = EXCLUDED.uuid,
-                uri = EXCLUDED.uri,
                 quality_grade = EXCLUDED.quality_grade,
                 species_guess = EXCLUDED.species_guess,
                 observed_on = EXCLUDED.observed_on,
@@ -363,8 +339,6 @@ class RawDataLoader:
                 identifications_count = EXCLUDED.identifications_count,
                 num_identification_agreements = EXCLUDED.num_identification_agreements,
                 num_identification_disagreements = EXCLUDED.num_identification_disagreements,
-                comments_count = EXCLUDED.comments_count,
-                faves_count = EXCLUDED.faves_count,
                 taxon_id = EXCLUDED.taxon_id,
                 observer_id = EXCLUDED.observer_id,
                 loaded_from = EXCLUDED.loaded_from,
@@ -374,8 +348,6 @@ class RawDataLoader:
                 project_alias,
                 download_date,
                 observation_json["id"],
-                observation_json.get("uuid"),
-                observation_json.get("uri"),
                 observation_json.get("quality_grade"),
                 observation_json.get("species_guess"),
                 observation_json.get("observed_on"),
@@ -405,8 +377,6 @@ class RawDataLoader:
                 observation_json.get("identifications_count"),
                 observation_json.get("num_identification_agreements"),
                 observation_json.get("num_identification_disagreements"),
-                observation_json.get("comments_count"),
-                observation_json.get("faves_count"),
                 taxon_id,
                 observer_id,
                 loaded_from,
@@ -481,127 +451,6 @@ class RawDataLoader:
                 ),
             )
             load_counts["observation_photos"] += 1
-
-    def _load_project_observations(
-        self,
-        project_alias: str,
-        download_date: date,
-        loaded_from: str,
-        observation_id: int,
-        observation_json: dict[str, Any],
-        load_counts: dict[str, int],
-    ):
-        """Load project observation relations for an observation.
-
-        @param project_alias Local project alias.
-        @param download_date Snapshot date.
-        @param loaded_from Source file that supplied the project observation.
-        @param observation_id iNaturalist observation ID.
-        @param observation_json Observation JSON object.
-        @param load_counts Processed row counts by table.
-        """
-        for project_observation_json in observation_json.get("project_observations") or []:
-            project_observation_id = project_observation_json.get("id")
-            if project_observation_id is None:
-                continue
-
-            project_json = project_observation_json.get("project") or {}
-            self._database_connection.execute(
-                """
-                INSERT INTO project_observations (
-                    project_alias,
-                    download_date,
-                    project_observation_id,
-                    observation_id,
-                    uuid,
-                    inat_project_id,
-                    preferences_json,
-                    loaded_from,
-                    loaded_at
-                )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, now())
-                ON CONFLICT (project_alias, project_observation_id) DO UPDATE SET
-                    download_date = EXCLUDED.download_date,
-                    observation_id = EXCLUDED.observation_id,
-                    uuid = EXCLUDED.uuid,
-                    inat_project_id = EXCLUDED.inat_project_id,
-                    preferences_json = EXCLUDED.preferences_json,
-                    loaded_from = EXCLUDED.loaded_from,
-                    loaded_at = now()
-                """,
-                (
-                    project_alias,
-                    download_date,
-                    project_observation_id,
-                    observation_id,
-                    project_observation_json.get("uuid"),
-                    project_json.get("id"),
-                    Jsonb(project_observation_json.get("preferences")),
-                    loaded_from,
-                ),
-            )
-            load_counts["project_observations"] += 1
-
-    def _load_observation_field_values(
-        self,
-        project_alias: str,
-        download_date: date,
-        loaded_from: str,
-        observation_id: int,
-        observation_json: dict[str, Any],
-        load_counts: dict[str, int],
-    ):
-        """Load non-empty observation field values for an observation.
-
-        @param project_alias Local project alias.
-        @param download_date Snapshot date.
-        @param loaded_from Source file that supplied the field value.
-        @param observation_id iNaturalist observation ID.
-        @param observation_json Observation JSON object.
-        @param load_counts Processed row counts by table.
-        """
-        for ofv_index, field_value_json in enumerate(observation_json.get("ofvs") or []):
-            if not field_value_json:
-                continue
-
-            field_json = field_value_json.get("field") or field_value_json.get("observation_field") or {}
-            field_id = field_json.get("id") if isinstance(field_json, dict) else None
-            field_name = field_json.get("name") if isinstance(field_json, dict) else None
-            field_value = field_value_json.get("value")
-            self._database_connection.execute(
-                """
-                INSERT INTO observation_field_values (
-                    project_alias,
-                    download_date,
-                    observation_id,
-                    ofv_index,
-                    field_id,
-                    field_name,
-                    value,
-                    loaded_from,
-                    loaded_at
-                )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, now())
-                ON CONFLICT (project_alias, observation_id, ofv_index) DO UPDATE SET
-                    download_date = EXCLUDED.download_date,
-                    field_id = EXCLUDED.field_id,
-                    field_name = EXCLUDED.field_name,
-                    value = EXCLUDED.value,
-                    loaded_from = EXCLUDED.loaded_from,
-                    loaded_at = now()
-                """,
-                (
-                    project_alias,
-                    download_date,
-                    observation_id,
-                    ofv_index,
-                    field_id,
-                    field_name,
-                    str(field_value) if field_value is not None else None,
-                    loaded_from,
-                ),
-            )
-            load_counts["observation_field_values"] += 1
 
     def _get_latitude_longitude(self, observation_json: dict[str, Any]) -> tuple[float | None, float | None]:
         """Extract latitude and longitude from GeoJSON coordinates.

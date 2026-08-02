@@ -16,13 +16,13 @@ Downloads raw iNaturalist API pages for each configured project. By default, dow
 Raw data is stored by project and download date:
 
 ```text
-data/<project_alias>/<YYYYMMDD>/raw_data/<project_alias>_<YYYYMMDD>_page_<NUMBER>.json
+data/raw/<project_alias>/<YYYYMMDD>/raw_data/<project_alias>_<YYYYMMDD>_page_<NUMBER>.json
 ```
 
 Example:
 
 ```text
-data/obs/20260606/raw_data/obs_20260606_page_000001.json
+data/raw/obs/20260606/raw_data/obs_20260606_page_000001.json
 ```
 
 The page number padding is computed from the total results reported by iNaturalist and the requested batch size.
