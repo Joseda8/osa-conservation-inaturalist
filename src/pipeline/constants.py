@@ -23,8 +23,11 @@ DEFAULT_PIPELINE_MONTH = None
 # Name of the pipeline that refreshes one complete calendar month.
 MONTHLY_UPDATE_PIPELINE_NAME = "monthly-update"
 
-# Steps that download, load, reconcile, and enrich one monthly update.
-MONTHLY_UPDATE_PIPELINE_STEP_NAMES = ("migrate-db", "download-raw-data", "download-trends", "load-raw-data-to-db", "reconcile-project-observations", "enrich-taxonomy")
+# Name of the pipeline that imports all available historical data.
+HISTORICAL_LOAD_PIPELINE_NAME = "historical-load"
+
+# Steps that download, load, reconcile, and enrich a data update.
+DATA_UPDATE_PIPELINE_STEP_NAMES = ("download-raw-data", "download-trends", "load-raw-data-to-db", "reconcile-project-observations", "enrich-taxonomy")
 
 # Whether the command-line interface lists steps instead of running the pipeline.
 DEFAULT_LIST_STEPS = False

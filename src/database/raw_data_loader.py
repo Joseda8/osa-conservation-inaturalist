@@ -120,7 +120,7 @@ class RawDataLoader:
         @param project_alias Local project alias.
         @return Download date.
         """
-        download_date_text = raw_page_path.parent.parent.name
+        download_date_text = raw_page_path.parent.name
         file_pattern = rf"^{re.escape(project_alias)}_{download_date_text}_page_(\d+)\.json$"
         file_match = re.match(file_pattern, raw_page_path.name)
         if file_match is None:

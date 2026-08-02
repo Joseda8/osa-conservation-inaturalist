@@ -71,7 +71,15 @@ Run the complete update for one calendar month:
 PYTHONPATH=src python3 src/main.py --pipeline monthly-update --year 2026 --month 7
 ```
 
-This downloads that month’s observations and trends, loads only the files created by the command, reconciles project membership, and enriches missing taxonomy.
+This downloads the selected month for observations and trends, loads only the files created by the command, reconciles project membership, and enriches missing taxonomy. Initialize the database separately with `--steps migrate-db` before the first run.
+
+Run the initial historical import before monthly updates:
+
+```bash
+PYTHONPATH=src python3 src/main.py --pipeline historical-load
+```
+
+This downloads all available project observations and trend history, then loads, reconciles, and enriches the resulting data.
 
 Run selected steps:
 

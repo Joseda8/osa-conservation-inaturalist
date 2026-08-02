@@ -101,6 +101,9 @@ class InaturalistClient(JsonFileStorage):
         for period_start_text, metric_value in sorted(month_counts.items()):
             period_start = datetime.strptime(period_start_text, "%Y-%m-%d").date()
             period_end = self._get_month_end_date(period_start)
+            source_period_end = source_params.get("d2")
+            if source_period_end is not None:
+                period_end = min(period_end, datetime.fromisoformat(source_period_end).date())
             trend_records.append(
                 TrendRecord(
                     region_config=trend_region_config,
