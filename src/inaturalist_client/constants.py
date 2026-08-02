@@ -79,9 +79,6 @@ MINIMUM_RECONCILIATION_BRANCH_SIZE = 1
 # Divisor used to split a reconciliation branch into two halves.
 RECONCILIATION_BRANCH_DIVISOR = 2
 
-# Increment applied when progressing through API pages or split depths.
-SEQUENCE_INCREMENT = 1
-
 # First HTTP status code in the client-error range.
 FIRST_CLIENT_ERROR_STATUS_CODE = 400
 
