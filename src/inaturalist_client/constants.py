@@ -43,6 +43,9 @@ DEFAULT_REQUEST_COOLDOWN_SECONDS = 1.1
 # Default delay before retrying a failed iNaturalist API request.
 DEFAULT_FAILURE_COOLDOWN_SECONDS = 60.0
 
+# Whether downloaded API pages are stored as JSON files by default.
+DEFAULT_STORE_FILES = True
+
 # First page number used by the iNaturalist API.
 FIRST_API_PAGE_NUMBER = 1
 

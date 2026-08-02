@@ -10,22 +10,21 @@ from typing import Any
 
 from utils import LOGGER
 
+from .constants import DEFAULT_STORE_FILES
+
 
 class JsonFileStorage:
     """Base class for writing downloaded data to JSON files.
 
     @param storage_dir Directory where JSON files are written.
-    @param store_files Whether downloads should be saved by default.
     """
 
-    def __init__(self, storage_dir: Path | str, store_files: bool = True):
+    def __init__(self, storage_dir: Path | str):
         """Create a JSON file storage helper.
 
         @param storage_dir Directory where JSON files are written.
-        @param store_files Whether downloads should be saved by default.
         """
         self._storage_dir = Path(storage_dir)
-        self._store_files = store_files
 
     def _save_json(self, file_path: Path | str, content: Any) -> Path:
         """Write content to a JSON file.
@@ -44,16 +43,15 @@ class JsonFileStorage:
         LOGGER.info("Stored JSON data in file: %s", output_path)
         return output_path
 
-    def _save_json_if_enabled(self, file_path: Path | str, content: Any, store: bool | None = None) -> Path | None:
+    def _save_json_if_enabled(self, file_path: Path | str, content: Any, store: bool = DEFAULT_STORE_FILES) -> Path | None:
         """Write JSON content when storage is enabled.
 
         @param file_path Relative path of the JSON file to create.
         @param content JSON-serializable content to write.
-        @param store Overrides the default storage setting when provided.
+        @param store Whether to write the content to a JSON file.
         @return Path to the saved file, or None when storage is disabled.
         """
-        should_store = self._store_files if store is None else store
-        if not should_store:
+        if not store:
             return None
 
         return self._save_json(file_path, content)

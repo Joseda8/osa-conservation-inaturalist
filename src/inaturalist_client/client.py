@@ -23,6 +23,7 @@ from .constants import (
     DEFAULT_FAILURE_COOLDOWN_SECONDS,
     DEFAULT_PROJECT_OBSERVATIONS_PER_PAGE,
     DEFAULT_REQUEST_COOLDOWN_SECONDS,
+    DEFAULT_STORE_FILES,
     EMPTY_API_RESULT_COUNT,
     FIRST_API_PAGE_NUMBER,
     FIRST_BATCH_OFFSET,
@@ -57,17 +58,11 @@ from .trend_region_config import TrendRegionConfig
 
 
 class InaturalistClient(JsonFileStorage):
-    """Client for downloading iNaturalist data.
+    """Client for downloading iNaturalist data."""
 
-    @param store_files Whether downloads should be saved as JSON by default.
-    """
-
-    def __init__(self, store_files: bool = True):
-        """Create an iNaturalist client.
-
-        @param store_files Whether downloads should be saved as JSON by default.
-        """
-        super().__init__(storage_dir=DATA_DIR, store_files=store_files)
+    def __init__(self):
+        """Create an iNaturalist client."""
+        super().__init__(storage_dir=DATA_DIR)
         self._session = self._create_session()
 
     def get_monthly_observation_trends(
@@ -476,7 +471,7 @@ class InaturalistClient(JsonFileStorage):
         failure_cooldown_seconds: float = DEFAULT_FAILURE_COOLDOWN_SECONDS,
         updated_since: datetime | str | None = None,
         force_refresh: bool = False,
-        store: bool | None = None,
+        store: bool = DEFAULT_STORE_FILES,
     ) -> ProjectDownloadSummary:
         """Download all observation pages for an iNaturalist project.
 
@@ -487,7 +482,7 @@ class InaturalistClient(JsonFileStorage):
         @param failure_cooldown_seconds Seconds to wait after failed requests.
         @param updated_since Only include observations updated since this time.
         @param force_refresh Whether to bypass cached responses.
-        @param store Overrides the default JSON storage setting when provided.
+        @param store Whether to save downloaded pages as JSON files.
         @return Summary of the project download.
         """
         date_version = self._format_download_date(download_date)
@@ -508,8 +503,7 @@ class InaturalistClient(JsonFileStorage):
                 per_page=per_page,
                 failure_cooldown_seconds=failure_cooldown_seconds,
                 updated_since=updated_since,
-                force_refresh=force_refresh,
-            )
+                force_refresh=force_refresh)
             if current_page == FIRST_API_PAGE_NUMBER:
                 total_results = int(observation_response.get("total_results", EMPTY_API_RESULT_COUNT))
 
@@ -520,16 +514,8 @@ class InaturalistClient(JsonFileStorage):
             LOGGER.info("Downloaded page %s for project %s", current_page, project_config.alias)
             self._log_cache_status()
 
-            raw_file_path = self._raw_page_file_path(
-                project_alias=project_config.alias,
-                download_date=date_version,
-                page=current_page,
-            )
-            saved_file_path = self._save_json_if_enabled(
-                raw_file_path,
-                observation_response,
-                store=store,
-            )
+            raw_file_path = self._raw_page_file_path(project_alias=project_config.alias, download_date=date_version, page=current_page)
+            saved_file_path = self._save_json_if_enabled(raw_file_path, observation_response, store=store)
             if saved_file_path is None:
                 LOGGER.info("Observation page was not stored in a file")
             else:
