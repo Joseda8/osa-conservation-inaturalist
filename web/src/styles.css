@@ -28,7 +28,6 @@ button {
   padding: 2.5rem 1.5rem;
 }
 
-.organization-name,
 .eyebrow {
   color: #8fd3a8;
   font-size: 0.75rem;
@@ -36,6 +35,12 @@ button {
   letter-spacing: 0.12em;
   margin: 0 0 0.5rem;
   text-transform: uppercase;
+}
+
+.organization-logo {
+  display: block;
+  margin: 0 0 1.5rem;
+  max-width: 8.5rem;
 }
 
 .sidebar h1 {

@@ -99,7 +99,7 @@ export default function App() {
   return (
     <div className="dashboard-layout">
       <aside className="sidebar">
-        <p className="organization-name">OSA Conservation</p>
+        <img alt="OSA Conservation: conserving Costa Rica's natural treasure" className="organization-logo" src={`${import.meta.env.BASE_URL}assets/osa-conservation-logo.png`} />
         <h1>iNaturalist dashboard</h1>
         <nav aria-label="Dashboard sections">
           {DASHBOARD_SECTIONS.map((section) => (
