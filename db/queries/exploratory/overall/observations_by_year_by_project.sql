@@ -3,13 +3,13 @@
 
 SELECT
     project_alias,
-    observed_year,
+    EXTRACT(YEAR FROM observed_on)::INTEGER AS observed_year,
     COUNT(*) AS observations
 FROM observations
-WHERE observed_year IS NOT NULL
+WHERE observed_on IS NOT NULL
 GROUP BY
     project_alias,
-    observed_year
+    EXTRACT(YEAR FROM observed_on)
 ORDER BY
     project_alias,
-    observed_year;
+    EXTRACT(YEAR FROM observed_on);

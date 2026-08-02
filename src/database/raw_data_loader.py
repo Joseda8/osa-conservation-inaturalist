@@ -260,8 +260,6 @@ class RawDataLoader:
         @param load_counts Processed row counts by table.
         """
         latitude, longitude = self._get_latitude_longitude(observation_json)
-        observed_details = observation_json.get("observed_on_details") or {}
-        created_details = observation_json.get("created_at_details") or {}
         self._database_connection.execute(
             """
             INSERT INTO observations (
@@ -271,15 +269,9 @@ class RawDataLoader:
                 quality_grade,
                 species_guess,
                 observed_on,
-                observed_year,
-                observed_month,
-                observed_day,
+                observed_at,
                 created_at,
-                created_year,
-                created_month,
-                created_day,
                 updated_at,
-                time_zone_offset,
                 longitude,
                 latitude,
                 location,
@@ -305,23 +297,16 @@ class RawDataLoader:
             VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, now()
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, now()
             )
             ON CONFLICT (project_alias, observation_id) DO UPDATE SET
                 download_date = EXCLUDED.download_date,
                 quality_grade = EXCLUDED.quality_grade,
                 species_guess = EXCLUDED.species_guess,
                 observed_on = EXCLUDED.observed_on,
-                observed_year = EXCLUDED.observed_year,
-                observed_month = EXCLUDED.observed_month,
-                observed_day = EXCLUDED.observed_day,
+                observed_at = EXCLUDED.observed_at,
                 created_at = EXCLUDED.created_at,
-                created_year = EXCLUDED.created_year,
-                created_month = EXCLUDED.created_month,
-                created_day = EXCLUDED.created_day,
                 updated_at = EXCLUDED.updated_at,
-                time_zone_offset = EXCLUDED.time_zone_offset,
                 longitude = EXCLUDED.longitude,
                 latitude = EXCLUDED.latitude,
                 location = EXCLUDED.location,
@@ -351,15 +336,9 @@ class RawDataLoader:
                 observation_json.get("quality_grade"),
                 observation_json.get("species_guess"),
                 observation_json.get("observed_on"),
-                observed_details.get("year"),
-                observed_details.get("month"),
-                observed_details.get("day"),
+                observation_json.get("time_observed_at"),
                 observation_json.get("created_at"),
-                created_details.get("year"),
-                created_details.get("month"),
-                created_details.get("day"),
                 observation_json.get("updated_at"),
-                observation_json.get("time_zone_offset"),
                 longitude,
                 latitude,
                 observation_json.get("location"),
