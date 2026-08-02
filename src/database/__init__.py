@@ -11,6 +11,7 @@ from .project_observation_reconciler import ProjectObservationReconciler
 from .raw_data_loader import RawDataLoader
 from .taxon_repository import TaxonRepository
 from .trend_loader import TrendLoader
+from .trend_raw_data_loader import TrendRawDataLoader
 
 __all__ = [
     "DATABASE_URL_ENV_VAR",
@@ -21,6 +22,7 @@ __all__ = [
     "RawDataLoader",
     "TaxonRepository",
     "TrendLoader",
+    "TrendRawDataLoader",
     "get_database_url",
     "open_database_connection",
 ]

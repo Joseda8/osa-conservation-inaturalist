@@ -22,6 +22,8 @@ class PipelineContext:
     @param failure_cooldown_seconds Seconds to wait after failed requests.
     @param download_mode Raw data download mode.
     @param updated_since Only download observations updated since this time.
+    @param observed_date_start First observed date for a bounded observation download.
+    @param observed_date_end Final observed date for a bounded observation download.
     @param load_date Only load raw data for this snapshot date.
     @param trend_mode Trend download mode.
     @param trend_period_start First date of the monthly trend period range to download.
@@ -37,6 +39,8 @@ class PipelineContext:
     failure_cooldown_seconds: float
     download_mode: str
     updated_since: datetime | str | None = None
+    observed_date_start: date | None = None
+    observed_date_end: date | None = None
     load_date: str | None = None
     trend_mode: str = "since"
     trend_period_start: date | None = None

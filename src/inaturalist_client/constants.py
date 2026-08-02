@@ -19,8 +19,11 @@ CACHE_DIR = DATA_DIR / "cache"
 # Folder for raw project downloads under the project data root.
 RAW_DOWNLOADS_DIR_NAME = "raw"
 
-# Folder name for raw API page responses inside each project version.
-RAW_DATA_DIR_NAME = "raw_data"
+# Folder name for downloaded aggregate trends inside the raw data tree.
+RAW_TRENDS_DIR_NAME = "trends"
+
+# Filename prefix used for downloaded aggregate trend files.
+TREND_FILE_NAME_PREFIX = "trends"
 
 # Number of digits used in raw API page filenames.
 RAW_PAGE_NUMBER_PADDING = 8

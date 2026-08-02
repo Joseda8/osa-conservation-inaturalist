@@ -23,10 +23,11 @@ class TrendLoader:
         """
         self._database_connection = database_connection
 
-    def load(self, trend_records: list[TrendRecord]) -> int:
+    def load(self, trend_records: list[TrendRecord], loaded_from: str) -> int:
         """Load trend records into PostgreSQL.
 
         @param trend_records Trend records to upsert.
+        @param loaded_from Source file that supplied the trend records.
         @return Number of trend records processed.
         """
         if not trend_records:
@@ -35,15 +36,16 @@ class TrendLoader:
 
         with self._database_connection.transaction():
             for trend_record in trend_records:
-                self._upsert_trend_record(trend_record)
+                self._upsert_trend_record(trend_record, loaded_from)
 
         LOGGER.info("Loaded %s trend records into PostgreSQL", len(trend_records))
         return len(trend_records)
 
-    def _upsert_trend_record(self, trend_record: TrendRecord):
+    def _upsert_trend_record(self, trend_record: TrendRecord, loaded_from: str):
         """Upsert one trend record.
 
         @param trend_record Trend record to upsert.
+        @param loaded_from Source file that supplied the trend record.
         """
         region_config = trend_record.region_config
         self._database_connection.execute(
@@ -62,9 +64,10 @@ class TrendLoader:
                 value,
                 source_endpoint,
                 source_params,
+                loaded_from,
                 loaded_at
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
             ON CONFLICT (
                 region_key,
                 metric_name,
@@ -81,6 +84,7 @@ class TrendLoader:
                 value = EXCLUDED.value,
                 source_endpoint = EXCLUDED.source_endpoint,
                 source_params = EXCLUDED.source_params,
+                loaded_from = EXCLUDED.loaded_from,
                 loaded_at = now()
             """,
             (
@@ -97,5 +101,6 @@ class TrendLoader:
                 trend_record.value,
                 trend_record.source_endpoint,
                 Jsonb(trend_record.source_params),
+                loaded_from,
             ),
         )

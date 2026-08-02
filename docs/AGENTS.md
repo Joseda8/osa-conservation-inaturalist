@@ -24,4 +24,4 @@ Read the `README.md` to catch up with the project. In general keep changes simpl
 - Prefix private attributes and methods with `_`.
 - Do not keep dead code or compatibility wrappers that are no longer used.
 - Keep no more than one class per file. When adding a class, create a dedicated module for it.
-- Keep the complete database baseline in `db/migrations/0001_initial_schema.sql`. Make subsequent schema changes through versioned SQL migrations in `db/migrations/` and preserve the ability to roll back to the baseline; do not create or change tables, indexes, or constraints with ad hoc runtime DDL.
+- Keep the complete PostgreSQL 1.0 schema in `db/migrations/0001_initial_schema.sql`. Do not create additional migrations: update this single script and rebuild the local database when schema changes are needed. Do not create or change tables, indexes, or constraints with ad hoc runtime DDL.

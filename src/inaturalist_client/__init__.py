@@ -10,6 +10,7 @@ from .project_config import ProjectConfig
 from .project_download_summary import ProjectDownloadSummary
 from .storage import JsonFileStorage
 from .trend_record import TrendRecord
+from .trend_file_storage import TrendFileStorage
 from .trend_region_config import TrendRegionConfig
 
 __all__ = [
@@ -20,5 +21,6 @@ __all__ = [
     "ProjectDownloadSummary",
     "TREND_REGIONS",
     "TrendRecord",
+    "TrendFileStorage",
     "TrendRegionConfig",
 ]

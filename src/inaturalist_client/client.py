@@ -36,7 +36,6 @@ from .constants import (
     MINIMUM_COOLDOWN_SECONDS,
     MINIMUM_OBSERVATIONS_PER_PAGE,
     MONTHRANGE_LAST_DAY_INDEX,
-    RAW_DATA_DIR_NAME,
     RAW_DOWNLOADS_DIR_NAME,
     RAW_PAGE_NUMBER_FILL_CHARACTER,
     RAW_PAGE_NUMBER_PADDING,
@@ -469,6 +468,8 @@ class InaturalistClient(JsonFileStorage):
         request_cooldown_seconds: float = DEFAULT_REQUEST_COOLDOWN_SECONDS,
         failure_cooldown_seconds: float = DEFAULT_FAILURE_COOLDOWN_SECONDS,
         updated_since: datetime | str | None = None,
+        observed_date_start: date | None = None,
+        observed_date_end: date | None = None,
         force_refresh: bool = False,
         store: bool = DEFAULT_STORE_FILES,
     ) -> ProjectDownloadSummary:
@@ -480,6 +481,8 @@ class InaturalistClient(JsonFileStorage):
         @param request_cooldown_seconds Seconds to wait after each successful request.
         @param failure_cooldown_seconds Seconds to wait after failed requests.
         @param updated_since Only include observations updated since this time.
+        @param observed_date_start Only include observations observed on or after this date.
+        @param observed_date_end Only include observations observed on or before this date.
         @param force_refresh Whether to bypass cached responses.
         @param store Whether to save downloaded pages as JSON files.
         @return Summary of the project download.
@@ -495,9 +498,11 @@ class InaturalistClient(JsonFileStorage):
         LOGGER.info("Starting project download for %s (%s)", project_config.alias, project_config.slug)
         if updated_since is not None:
             LOGGER.info("Downloading observations updated since %s", updated_since)
+        if observed_date_start is not None:
+            LOGGER.info("Downloading observations observed from %s through %s", observed_date_start, observed_date_end)
 
         while True:
-            observation_response = self._download_project_observation_page(project_config=project_config, id_above=last_observation_id, per_page=per_page, failure_cooldown_seconds=failure_cooldown_seconds, updated_since=updated_since, force_refresh=force_refresh)
+            observation_response = self._download_project_observation_page(project_config=project_config, id_above=last_observation_id, per_page=per_page, failure_cooldown_seconds=failure_cooldown_seconds, updated_since=updated_since, observed_date_start=observed_date_start, observed_date_end=observed_date_end, force_refresh=force_refresh)
             # The API reports the project total with the first page response.
             if current_page == 1:
                 total_results = int(observation_response.get("total_results", EMPTY_API_RESULT_COUNT))
@@ -535,6 +540,8 @@ class InaturalistClient(JsonFileStorage):
         per_page: int,
         failure_cooldown_seconds: float,
         updated_since: datetime | str | None,
+        observed_date_start: date | None,
+        observed_date_end: date | None,
         force_refresh: bool,
     ) -> dict[str, Any]:
         """Download one observation page for an iNaturalist project.
@@ -544,6 +551,8 @@ class InaturalistClient(JsonFileStorage):
         @param per_page Number of observations to request in one page.
         @param failure_cooldown_seconds Seconds to wait after failed requests.
         @param updated_since Only include observations updated since this time.
+        @param observed_date_start Only include observations observed on or after this date.
+        @param observed_date_end Only include observations observed on or before this date.
         @param force_refresh Whether to bypass cached responses.
         @return The observation response dictionary.
         """
@@ -558,6 +567,10 @@ class InaturalistClient(JsonFileStorage):
             request_parameters["id_above"] = id_above
         if updated_since is not None:
             request_parameters["updated_since"] = self._format_api_datetime(updated_since)
+        if observed_date_start is not None:
+            request_parameters["d1"] = observed_date_start.isoformat()
+        if observed_date_end is not None:
+            request_parameters["d2"] = observed_date_end.isoformat()
 
         return self._get_observations_with_retry(request_parameters=request_parameters, failure_cooldown_seconds=failure_cooldown_seconds, force_refresh=force_refresh)
 
@@ -747,7 +760,7 @@ class InaturalistClient(JsonFileStorage):
         @return Relative raw page JSON path.
         """
         file_name = f"{project_alias}_{download_date}_page_{page:{RAW_PAGE_NUMBER_FILL_CHARACTER}{RAW_PAGE_NUMBER_PADDING}d}.json"
-        return Path(RAW_DOWNLOADS_DIR_NAME) / project_alias / download_date / RAW_DATA_DIR_NAME / file_name
+        return Path(RAW_DOWNLOADS_DIR_NAME) / project_alias / download_date / file_name
 
     def _log_cache_status(self, resource_name: str = "Observation page"):
         """Log whether the last API response came from cache.

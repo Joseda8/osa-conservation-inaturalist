@@ -10,7 +10,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from inaturalist_client.constants import DATA_DIR, RAW_DATA_DIR_NAME, RAW_DOWNLOADS_DIR_NAME
+from inaturalist_client.constants import DATA_DIR, RAW_DOWNLOADS_DIR_NAME
 from inaturalist_client.project_config import ProjectConfig
 from psycopg import Connection
 from psycopg.types.json import Jsonb
@@ -84,10 +84,10 @@ class RawDataLoader:
         """
         project_data_dir = self._data_dir / RAW_DOWNLOADS_DIR_NAME / project_alias
         if self._load_date is not None:
-            raw_data_dir = project_data_dir / self._load_date / RAW_DATA_DIR_NAME
-            return sorted(raw_data_dir.glob(f"{project_alias}_{self._load_date}_page_*.json"))
+            project_date_dir = project_data_dir / self._load_date
+            return sorted(project_date_dir.glob(f"{project_alias}_{self._load_date}_page_*.json"))
 
-        return sorted(project_data_dir.glob(f"*/{RAW_DATA_DIR_NAME}/{project_alias}_*_page_*.json"))
+        return sorted(project_data_dir.glob(f"*/{project_alias}_*_page_*.json"))
 
     def _load_raw_page(self, raw_page_path: Path, project_alias: str, load_counts: dict[str, int]):
         """Load one raw page JSON file.

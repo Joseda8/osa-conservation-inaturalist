@@ -16,4 +16,5 @@ db/backups/*
 # Developer notes
 DEV_NOTES.md
 DEPLOYMENT_AND_VISUALIZATION_OPTIONS.md
+USER_NOTES.md
 static-publishing-architecture.png

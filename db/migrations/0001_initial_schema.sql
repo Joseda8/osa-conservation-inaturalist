@@ -109,6 +109,7 @@ CREATE TABLE trends (
     value NUMERIC NOT NULL,
     source_endpoint TEXT NOT NULL,
     source_params JSONB NOT NULL,
+    loaded_from TEXT NOT NULL,
     loaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (
         region_key,

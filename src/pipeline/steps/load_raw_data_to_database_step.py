@@ -4,7 +4,7 @@
 @brief Loads raw iNaturalist JSON files into PostgreSQL.
 """
 
-from database import RawDataLoader, open_database_connection
+from database import RawDataLoader, TrendRawDataLoader, open_database_connection
 from pipeline.pipeline_context import PipelineContext
 
 
@@ -22,5 +22,9 @@ class LoadRawDataToDatabaseStep:
             RawDataLoader(
                 database_connection,
                 pipeline_context.project_configs,
+                load_date=pipeline_context.load_date,
+            ).load()
+            TrendRawDataLoader(
+                database_connection,
                 load_date=pipeline_context.load_date,
             ).load()

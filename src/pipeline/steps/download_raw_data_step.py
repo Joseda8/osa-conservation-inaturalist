@@ -24,6 +24,8 @@ class DownloadRawDataStep:
                 request_cooldown_seconds=pipeline_context.request_cooldown_seconds,
                 failure_cooldown_seconds=pipeline_context.failure_cooldown_seconds,
                 updated_since=pipeline_context.updated_since,
-                force_refresh=pipeline_context.download_mode == "incremental",
+                observed_date_start=pipeline_context.observed_date_start,
+                observed_date_end=pipeline_context.observed_date_end,
+                force_refresh=pipeline_context.download_mode == "incremental" or pipeline_context.observed_date_start is not None,
             )
             pipeline_context.download_summaries.append(project_summary)
