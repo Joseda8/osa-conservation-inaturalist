@@ -28,6 +28,9 @@ DEFAULT_OBSERVATIONS_CSV_FILE_NAME = "observations.csv"
 # Google Drive OAuth scope required to find, create, and replace files.
 GOOGLE_DRIVE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/drive"
 
+# Google Drive OAuth scope required to find and download files.
+GOOGLE_DRIVE_READ_SCOPE = "https://www.googleapis.com/auth/drive.readonly"
+
 # Google Drive API service name.
 GOOGLE_DRIVE_API_NAME = "drive"
 

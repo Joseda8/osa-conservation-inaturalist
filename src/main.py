@@ -20,6 +20,7 @@ from pipeline.steps import (
     MigrateDatabaseStep,
     ReconcileProjectObservationsStep,
     AnalyzeAndUploadToDriveStep,
+    RefreshGitHubPagesStep,
 )
 
 
@@ -31,6 +32,7 @@ _STEP_FACTORIES = {
     MigrateDatabaseStep.name: MigrateDatabaseStep,
     ReconcileProjectObservationsStep.name: ReconcileProjectObservationsStep,
     AnalyzeAndUploadToDriveStep.name: AnalyzeAndUploadToDriveStep,
+    RefreshGitHubPagesStep.name: RefreshGitHubPagesStep,
 }
 
 def _parse_arguments() -> argparse.Namespace:

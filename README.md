@@ -95,6 +95,10 @@ PYTHONPATH=src python3 src/main.py --steps analyze-and-upload-to-drive
 
 The step runs `SELECT * FROM observations LIMIT 5;`, writes the result to an in-memory CSV with headers, and creates or replaces `observations.csv` in the configured Google Drive folder. Set `GOOGLE_DRIVE_UPLOAD_FOLDER_ID` in the ignored `.env` file to the ID of OSA's `processed-data` folder. Share that folder with the service-account email as an Editor, enable the Google Drive API for that account, and never commit its credential JSON. The default credential path is ignored by Git. Set `GOOGLE_SERVICE_ACCOUNT_JSON` or `GOOGLE_SERVICE_ACCOUNT_JSON_PATH` to use a different credential source; set `GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME` to override the file name.
 
+## GitHub Actions
+
+The manual **Refresh GitHub Pages** workflow will refresh OSA's GitHub Pages site from Drive data. Its current first step reads `observations.csv` and prints its content in the workflow log. Before running it, add `GOOGLE_DRIVE_UPLOAD_FOLDER_ID` as an Actions variable and the complete service-account JSON as an Actions secret named `GOOGLE_SERVICE_ACCOUNT_JSON`. The CSV content is visible to anyone who can view the workflow log.
+
 Run a full raw data download:
 
 ```bash
