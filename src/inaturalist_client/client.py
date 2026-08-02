@@ -18,12 +18,33 @@ from requests_cache import NEVER_EXPIRE
 from utils import LOGGER
 
 from .constants import (
+    COUNT_REQUEST_PER_PAGE,
     DATA_DIR,
+    DEFAULT_FAILURE_COOLDOWN_SECONDS,
+    DEFAULT_PROJECT_OBSERVATIONS_PER_PAGE,
+    DEFAULT_REQUEST_COOLDOWN_SECONDS,
+    EMPTY_API_RESULT_COUNT,
+    FIRST_API_PAGE_NUMBER,
+    FIRST_BATCH_OFFSET,
+    FIRST_CLIENT_ERROR_STATUS_CODE,
+    FIRST_OBSERVATION_RESULT_INDEX,
+    FIRST_SERVER_ERROR_STATUS_CODE,
+    INITIAL_RECONCILIATION_SPLIT_DEPTH,
+    LAST_OBSERVATION_RESULT_INDEX,
+    MINIMUM_RECONCILIATION_BRANCH_SIZE,
+    MINIMUM_COOLDOWN_SECONDS,
+    MINIMUM_OBSERVATIONS_PER_PAGE,
+    MONTHRANGE_LAST_DAY_INDEX,
     RAW_DATA_DIR_NAME,
+    RAW_PAGE_NUMBER_FILL_CHARACTER,
     RAW_PAGE_NUMBER_PADDING,
+    RECONCILIATION_BRANCH_DIVISOR,
     RECONCILE_OBSERVATION_ID_BATCH_SIZE,
+    SEQUENCE_INCREMENT,
     TMP_DIR,
+    TOO_MANY_REQUESTS_STATUS_CODE,
     TREND_COUNT_PER_PAGE,
+    TREND_TAXON_FIELDS,
 )
 from .observation_fields import OBSERVATION_ANALYSIS_FIELDS
 from .project_config import ProjectConfig
@@ -33,11 +54,6 @@ from .taxon_fields import TAXON_ENRICHMENT_FIELDS
 from .tracking_client_session import _TrackingClientSession
 from .trend_record import TrendRecord
 from .trend_region_config import TrendRegionConfig
-
-
-_TREND_TAXON_FIELDS = (
-    "(count:!t,taxon:(id:!t,name:!t,preferred_common_name:!t,rank:!t,iconic_taxon_name:!t))"
-)
 
 
 class InaturalistClient(JsonFileStorage):
@@ -59,7 +75,7 @@ class InaturalistClient(JsonFileStorage):
         trend_region_config: TrendRegionConfig,
         period_start: date | None = None,
         period_end: date | None = None,
-        failure_cooldown_seconds: float = 60.0,
+        failure_cooldown_seconds: float = DEFAULT_FAILURE_COOLDOWN_SECONDS,
     ) -> list[TrendRecord]:
         """Get monthly observation count trends for a region.
 
@@ -80,12 +96,7 @@ class InaturalistClient(JsonFileStorage):
         if period_end is not None:
             source_params["d2"] = period_end.isoformat()
 
-        LOGGER.info(
-            "Downloading observed monthly observation trends for %s from %s to %s",
-            trend_region_config.key,
-            period_start or "the beginning",
-            period_end or "now",
-        )
+        LOGGER.info("Downloading observed monthly observation trends for %s from %s to %s", trend_region_config.key, period_start or "the beginning", period_end or "now")
         histogram_response = self._get_api_response_with_retry(
             endpoint=source_endpoint,
             request_parameters=source_params,
@@ -107,18 +118,9 @@ class InaturalistClient(JsonFileStorage):
                     value=int(metric_value),
                     source_endpoint=source_endpoint,
                     source_params=source_params,
-                    raw_json={
-                        "period_start": period_start_text,
-                        "period_end": period_end.isoformat(),
-                        "value": metric_value,
-                    },
                 )
             )
-        LOGGER.info(
-            "Downloaded %s monthly observation trend rows for %s",
-            len(trend_records),
-            trend_region_config.key,
-        )
+        LOGGER.info("Downloaded %s monthly observation trend rows for %s", len(trend_records), trend_region_config.key)
         return trend_records
 
     def get_monthly_species_count_trends(
@@ -126,7 +128,7 @@ class InaturalistClient(JsonFileStorage):
         trend_region_config: TrendRegionConfig,
         period_start: date,
         period_end: date,
-        failure_cooldown_seconds: float = 60.0,
+        failure_cooldown_seconds: float = DEFAULT_FAILURE_COOLDOWN_SECONDS,
     ) -> list[TrendRecord]:
         """Get monthly species count trend rows for a region.
 
@@ -151,7 +153,7 @@ class InaturalistClient(JsonFileStorage):
         trend_region_config: TrendRegionConfig,
         period_start: date,
         period_end: date,
-        failure_cooldown_seconds: float = 60.0,
+        failure_cooldown_seconds: float = DEFAULT_FAILURE_COOLDOWN_SECONDS,
     ) -> list[TrendRecord]:
         """Get monthly iconic taxon count trend rows for a region.
 
@@ -196,7 +198,7 @@ class InaturalistClient(JsonFileStorage):
             **trend_region_config.request_params,
             "d1": period_start.isoformat(),
             "d2": period_end.isoformat(),
-            "fields": _TREND_TAXON_FIELDS,
+            "fields": TREND_TAXON_FIELDS,
             "per_page": TREND_COUNT_PER_PAGE,
         }
         trend_records: list[TrendRecord] = []
@@ -219,24 +221,16 @@ class InaturalistClient(JsonFileStorage):
                     period_type="month",
                     period_start=period_start,
                     period_end=period_end,
-                    value=int(response_row.get("count", 0)),
+                    value=int(response_row.get("count", EMPTY_API_RESULT_COUNT)),
                     source_endpoint=endpoint,
                     source_params=source_params,
-                    raw_json=response_row,
                     dimension_type=dimension_type,
                     dimension_id=str(taxon_id),
                     dimension_label=dimension_label,
                 )
             )
 
-        LOGGER.info(
-            "Downloaded %s %s trend rows for %s from %s to %s",
-            len(trend_records),
-            metric_name,
-            trend_region_config.key,
-            period_start,
-            period_end,
-        )
+        LOGGER.info("Downloaded %s %s trend rows for %s from %s to %s", len(trend_records), metric_name, trend_region_config.key, period_start, period_end)
         return trend_records
 
     def _get_paginated_trend_count_rows(
@@ -253,7 +247,7 @@ class InaturalistClient(JsonFileStorage):
         @return Count response rows.
         """
         response_rows: list[dict[str, Any]] = []
-        page_number = 1
+        page_number = FIRST_API_PAGE_NUMBER
         while True:
             request_params = {**source_params, "page": page_number}
             trend_count_response = self._get_api_response_with_retry(
@@ -269,7 +263,7 @@ class InaturalistClient(JsonFileStorage):
             if len(response_rows) >= total_results or not page_rows:
                 return response_rows
 
-            page_number += 1
+            page_number += SEQUENCE_INCREMENT
 
     def _get_month_end_date(self, period_start: date) -> date:
         """Get the last date of the month containing a period start date.
@@ -277,14 +271,14 @@ class InaturalistClient(JsonFileStorage):
         @param period_start First date in a monthly period.
         @return Last date in the same month.
         """
-        last_day = monthrange(period_start.year, period_start.month)[1]
+        last_day = monthrange(period_start.year, period_start.month)[MONTHRANGE_LAST_DAY_INDEX]
         return date(period_start.year, period_start.month, last_day)
 
     def get_taxa(
         self,
         taxon_ids: list[int],
-        request_cooldown_seconds: float = 1.1,
-        failure_cooldown_seconds: float = 60.0,
+        request_cooldown_seconds: float = DEFAULT_REQUEST_COOLDOWN_SECONDS,
+        failure_cooldown_seconds: float = DEFAULT_FAILURE_COOLDOWN_SECONDS,
         force_refresh: bool = False,
     ) -> list[dict[str, Any]]:
         """Get taxon metadata for one enrichment batch.
@@ -328,7 +322,7 @@ class InaturalistClient(JsonFileStorage):
         self,
         project_config: ProjectConfig,
         observation_ids: set[int],
-        failure_cooldown_seconds: float = 60.0,
+        failure_cooldown_seconds: float = DEFAULT_FAILURE_COOLDOWN_SECONDS,
     ) -> set[int]:
         """Get local observation IDs that no longer belong to a project.
 
@@ -340,30 +334,20 @@ class InaturalistClient(JsonFileStorage):
         stale_observation_ids: set[int] = set()
         sorted_observation_ids = sorted(observation_ids)
 
-        LOGGER.info(
-            "Checking %s local observation IDs for project %s",
-            len(sorted_observation_ids),
-            project_config.alias,
-        )
+        LOGGER.info("Checking %s local observation IDs for project %s", len(sorted_observation_ids), project_config.alias)
         total_batches = (
-            len(sorted_observation_ids) + RECONCILE_OBSERVATION_ID_BATCH_SIZE - 1
+            len(sorted_observation_ids) + RECONCILE_OBSERVATION_ID_BATCH_SIZE - SEQUENCE_INCREMENT
         ) // RECONCILE_OBSERVATION_ID_BATCH_SIZE
         for batch_start in range(
-            0,
+            FIRST_BATCH_OFFSET,
             len(sorted_observation_ids),
             RECONCILE_OBSERVATION_ID_BATCH_SIZE,
         ):
-            batch_number = (batch_start // RECONCILE_OBSERVATION_ID_BATCH_SIZE) + 1
+            batch_number = (batch_start // RECONCILE_OBSERVATION_ID_BATCH_SIZE) + SEQUENCE_INCREMENT
             observation_id_batch = sorted_observation_ids[
                 batch_start : batch_start + RECONCILE_OBSERVATION_ID_BATCH_SIZE
             ]
-            LOGGER.info(
-                "Request batch %s/%s for project %s with %s local observation IDs",
-                batch_number,
-                total_batches,
-                project_config.alias,
-                len(observation_id_batch),
-            )
+            LOGGER.info("Request batch %s/%s for project %s with %s local observation IDs", batch_number, total_batches, project_config.alias, len(observation_id_batch))
             stale_observation_ids.update(
                 self._get_stale_observation_ids_from_batch(
                     project_config=project_config,
@@ -373,11 +357,7 @@ class InaturalistClient(JsonFileStorage):
                 )
             )
 
-        LOGGER.info(
-            "Found %s stale local observation IDs for project %s",
-            len(stale_observation_ids),
-            project_config.alias,
-        )
+        LOGGER.info("Found %s stale local observation IDs for project %s", len(stale_observation_ids), project_config.alias)
         return stale_observation_ids
 
     def _get_stale_observation_ids_from_batch(
@@ -400,19 +380,9 @@ class InaturalistClient(JsonFileStorage):
             observation_ids=observation_ids,
             failure_cooldown_seconds=failure_cooldown_seconds,
         )
-        LOGGER.info(
-            "Request batch %s for project %s matched %s/%s local observation IDs",
-            batch_number,
-            project_config.alias,
-            current_observation_count,
-            len(observation_ids),
-        )
+        LOGGER.info("Request batch %s for project %s matched %s/%s local observation IDs", batch_number, project_config.alias, current_observation_count, len(observation_ids))
         if current_observation_count == len(observation_ids):
-            LOGGER.info(
-                "No stale observation IDs found in request batch %s for project %s",
-                batch_number,
-                project_config.alias,
-            )
+            LOGGER.info("No stale observation IDs found in request batch %s for project %s", batch_number, project_config.alias)
             return set()
 
         expected_stale_count = len(observation_ids) - current_observation_count
@@ -423,12 +393,7 @@ class InaturalistClient(JsonFileStorage):
             batch_number=batch_number,
             failure_cooldown_seconds=failure_cooldown_seconds,
         )
-        LOGGER.info(
-            "Request batch %s for project %s found %s stale observation IDs",
-            batch_number,
-            project_config.alias,
-            len(stale_observation_ids),
-        )
+        LOGGER.info("Request batch %s for project %s found %s stale observation IDs", batch_number, project_config.alias, len(stale_observation_ids))
         return stale_observation_ids
 
     def _find_stale_observation_ids(
@@ -449,34 +414,24 @@ class InaturalistClient(JsonFileStorage):
         @return IDs from the batch that are not currently in the project.
         """
         stale_observation_ids: set[int] = set()
-        search_stack = [(observation_ids, expected_stale_count, 0)]
+        search_stack = [(observation_ids, expected_stale_count, INITIAL_RECONCILIATION_SPLIT_DEPTH)]
 
         while search_stack and len(stale_observation_ids) < expected_stale_count:
             branch_observation_ids, branch_stale_count, split_depth = search_stack.pop()
-            if branch_stale_count <= 0:
+            if branch_stale_count <= EMPTY_API_RESULT_COUNT:
                 continue
 
             if branch_stale_count == len(branch_observation_ids):
-                LOGGER.info(
-                    "Found %s stale observation IDs in request batch %s for project %s",
-                    len(branch_observation_ids),
-                    batch_number,
-                    project_config.alias,
-                )
+                LOGGER.info("Found %s stale observation IDs in request batch %s for project %s", len(branch_observation_ids), batch_number, project_config.alias)
                 stale_observation_ids.update(branch_observation_ids)
                 continue
 
-            if len(branch_observation_ids) == 1:
-                LOGGER.info(
-                    "Found stale observation ID %s in request batch %s for project %s",
-                    branch_observation_ids[0],
-                    batch_number,
-                    project_config.alias,
-                )
-                stale_observation_ids.add(branch_observation_ids[0])
+            if len(branch_observation_ids) == MINIMUM_RECONCILIATION_BRANCH_SIZE:
+                LOGGER.info("Found stale observation ID %s in request batch %s for project %s", branch_observation_ids[FIRST_OBSERVATION_RESULT_INDEX], batch_number, project_config.alias)
+                stale_observation_ids.add(branch_observation_ids[FIRST_OBSERVATION_RESULT_INDEX])
                 continue
 
-            middle_index = len(branch_observation_ids) // 2
+            middle_index = len(branch_observation_ids) // RECONCILIATION_BRANCH_DIVISOR
             left_observation_ids = branch_observation_ids[:middle_index]
             right_observation_ids = branch_observation_ids[middle_index:]
             left_current_observation_count = self._count_observation_ids_in_project(
@@ -486,24 +441,13 @@ class InaturalistClient(JsonFileStorage):
             )
             left_stale_count = len(left_observation_ids) - left_current_observation_count
             right_stale_count = branch_stale_count - left_stale_count
-            LOGGER.info(
-                "Narrowing request batch %s for project %s: %s/%s left-branch IDs matched at split depth %s",
-                batch_number,
-                project_config.alias,
-                left_current_observation_count,
-                len(left_observation_ids),
-                split_depth + 1,
-            )
+            LOGGER.info("Narrowing request batch %s for project %s: %s/%s left-branch IDs matched at split depth %s", batch_number, project_config.alias, left_current_observation_count, len(left_observation_ids), split_depth + SEQUENCE_INCREMENT)
 
-            search_stack.append((right_observation_ids, right_stale_count, split_depth + 1))
-            search_stack.append((left_observation_ids, left_stale_count, split_depth + 1))
+            search_stack.append((right_observation_ids, right_stale_count, split_depth + SEQUENCE_INCREMENT))
+            search_stack.append((left_observation_ids, left_stale_count, split_depth + SEQUENCE_INCREMENT))
 
         if len(stale_observation_ids) >= expected_stale_count:
-            LOGGER.info(
-                "Found all %s expected stale IDs for request batch %s",
-                expected_stale_count,
-                batch_number,
-            )
+            LOGGER.info("Found all %s expected stale IDs for request batch %s", expected_stale_count, batch_number)
         return stale_observation_ids
 
     def _create_session(self) -> _TrackingClientSession:
@@ -527,9 +471,9 @@ class InaturalistClient(JsonFileStorage):
         self,
         project_config: ProjectConfig,
         download_date: date | str | None = None,
-        per_page: int = 25,
-        request_cooldown_seconds: float = 1.1,
-        failure_cooldown_seconds: float = 60.0,
+        per_page: int = DEFAULT_PROJECT_OBSERVATIONS_PER_PAGE,
+        request_cooldown_seconds: float = DEFAULT_REQUEST_COOLDOWN_SECONDS,
+        failure_cooldown_seconds: float = DEFAULT_FAILURE_COOLDOWN_SECONDS,
         updated_since: datetime | str | None = None,
         force_refresh: bool = False,
         store: bool | None = None,
@@ -546,21 +490,14 @@ class InaturalistClient(JsonFileStorage):
         @param store Overrides the default JSON storage setting when provided.
         @return Summary of the project download.
         """
-        if per_page <= 0:
-            raise ValueError("per_page must be greater than 0")
-
         date_version = self._format_download_date(download_date)
         saved_file_paths: list[Path] = []
-        current_page = 1
-        downloaded_page_count = 0
-        total_results = 0
+        current_page = FIRST_API_PAGE_NUMBER
+        downloaded_page_count = EMPTY_API_RESULT_COUNT
+        total_results = EMPTY_API_RESULT_COUNT
         last_observation_id: int | None = None
 
-        LOGGER.info(
-            "Starting project download for %s (%s)",
-            project_config.alias,
-            project_config.slug,
-        )
+        LOGGER.info("Starting project download for %s (%s)", project_config.alias, project_config.slug)
         if updated_since is not None:
             LOGGER.info("Downloading observations updated since %s", updated_since)
 
@@ -573,18 +510,14 @@ class InaturalistClient(JsonFileStorage):
                 updated_since=updated_since,
                 force_refresh=force_refresh,
             )
-            if current_page == 1:
-                total_results = int(observation_response.get("total_results", 0))
+            if current_page == FIRST_API_PAGE_NUMBER:
+                total_results = int(observation_response.get("total_results", EMPTY_API_RESULT_COUNT))
 
             observation_results = observation_response.get("results", [])
             if not observation_results:
                 break
 
-            LOGGER.info(
-                "Downloaded page %s for project %s",
-                current_page,
-                project_config.alias,
-            )
+            LOGGER.info("Downloaded page %s for project %s", current_page, project_config.alias)
             self._log_cache_status()
 
             raw_file_path = self._raw_page_file_path(
@@ -602,20 +535,15 @@ class InaturalistClient(JsonFileStorage):
             else:
                 saved_file_paths.append(saved_file_path)
 
-            downloaded_page_count += 1
+            downloaded_page_count += SEQUENCE_INCREMENT
             last_observation_id = self._get_last_observation_id(observation_results)
             if len(observation_results) < per_page:
                 break
 
             self._sleep_after_downloaded_request(request_cooldown_seconds)
-            current_page += 1
+            current_page += SEQUENCE_INCREMENT
 
-        LOGGER.info(
-            "Completed project download for %s: %s pages, %s total results",
-            project_config.alias,
-            downloaded_page_count,
-            total_results,
-        )
+        LOGGER.info("Completed project download for %s: %s pages, %s total results", project_config.alias, downloaded_page_count, total_results)
         return ProjectDownloadSummary(
             project_alias=project_config.alias,
             download_date=date_version,
@@ -682,7 +610,7 @@ class InaturalistClient(JsonFileStorage):
             },
             "order": "asc",
             "order_by": "id",
-            "per_page": 1,
+            "per_page": COUNT_REQUEST_PER_PAGE,
         }
 
         observation_response = self._get_observations_with_retry(
@@ -690,7 +618,7 @@ class InaturalistClient(JsonFileStorage):
             failure_cooldown_seconds=failure_cooldown_seconds,
             force_refresh=True,
         )
-        return int(observation_response.get("total_results", 0))
+        return int(observation_response.get("total_results", EMPTY_API_RESULT_COUNT))
 
     def _get_observations_with_retry(
         self,
@@ -709,16 +637,9 @@ class InaturalistClient(JsonFileStorage):
             try:
                 return self._get_project_observations_response(request_parameters, force_refresh)
             except RequestException as request_error:
-                LOGGER.warning(
-                    "Observation request failed with per_page=%s: %s",
-                    request_parameters["per_page"],
-                    request_error,
-                )
+                LOGGER.warning("Observation request failed with per_page=%s: %s", request_parameters["per_page"], request_error)
                 self._sleep_after_failed_request(failure_cooldown_seconds)
-                LOGGER.warning(
-                    "Retrying observation request with the same per_page=%s",
-                    request_parameters["per_page"],
-                )
+                LOGGER.warning("Retrying observation request with the same per_page=%s", request_parameters["per_page"])
 
     def _get_api_response_with_retry(
         self,
@@ -748,21 +669,13 @@ class InaturalistClient(JsonFileStorage):
                 response = request_error.response
                 if (
                     response is not None
-                    and 400 <= response.status_code < 500
-                    and response.status_code != 429
+                    and FIRST_CLIENT_ERROR_STATUS_CODE <= response.status_code < FIRST_SERVER_ERROR_STATUS_CODE
+                    and response.status_code != TOO_MANY_REQUESTS_STATUS_CODE
                 ):
-                    LOGGER.error(
-                        "API request was rejected for %s: %s",
-                        endpoint,
-                        response.text,
-                    )
+                    LOGGER.error("API request was rejected for %s: %s", endpoint, response.text)
                     raise
 
-                LOGGER.warning(
-                    "API request failed for %s: %s",
-                    endpoint,
-                    request_error,
-                )
+                LOGGER.warning("API request failed for %s: %s", endpoint, request_error)
                 self._sleep_after_failed_request(failure_cooldown_seconds)
                 LOGGER.warning("Retrying API request for %s", endpoint)
 
@@ -802,7 +715,7 @@ class InaturalistClient(JsonFileStorage):
         if self._session._last_response_from_cache:
             return
 
-        if request_cooldown_seconds <= 0:
+        if request_cooldown_seconds <= MINIMUM_COOLDOWN_SECONDS:
             return
 
         LOGGER.debug("Waiting %s seconds before the next request", request_cooldown_seconds)
@@ -813,7 +726,7 @@ class InaturalistClient(JsonFileStorage):
 
         @param failure_cooldown_seconds Seconds to wait.
         """
-        if failure_cooldown_seconds <= 0:
+        if failure_cooldown_seconds <= MINIMUM_COOLDOWN_SECONDS:
             return
 
         LOGGER.warning("Waiting %s seconds before retrying", failure_cooldown_seconds)
@@ -850,7 +763,7 @@ class InaturalistClient(JsonFileStorage):
         @param observation_results Observations returned by the API.
         @return Last observation ID in the response page.
         """
-        return int(observation_results[-1]["id"])
+        return int(observation_results[LAST_OBSERVATION_RESULT_INDEX]["id"])
 
     def _raw_page_file_path(
         self,
@@ -865,7 +778,7 @@ class InaturalistClient(JsonFileStorage):
         @param page Page number included in the file suffix.
         @return Relative raw page JSON path.
         """
-        file_name = f"{project_alias}_{download_date}_page_{page:0{RAW_PAGE_NUMBER_PADDING}d}.json"
+        file_name = f"{project_alias}_{download_date}_page_{page:{RAW_PAGE_NUMBER_FILL_CHARACTER}{RAW_PAGE_NUMBER_PADDING}d}.json"
         return Path(project_alias) / download_date / RAW_DATA_DIR_NAME / file_name
 
     def _log_cache_status(self, resource_name: str = "Observation page"):

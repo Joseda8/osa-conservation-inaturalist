@@ -1,5 +1,5 @@
 -- Title: Monthly observation trends by region
--- Description: Shows observed-date monthly iNaturalist observation counts for configured trend regions. Configure period_start as a Metabase Field Filter mapped to trends.period_start.
+-- Description: Shows observed-date monthly iNaturalist observation counts for configured trend regions. Bind period_start to trends.period_start.
 
 SELECT
     region_key,

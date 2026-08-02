@@ -1,6 +1,0 @@
-# Sub-project virtual environment
-.venv/
-
-# Downloaded boundaries and generated exploration outputs
-data/
-outputs/

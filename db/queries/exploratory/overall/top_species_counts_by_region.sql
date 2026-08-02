@@ -1,5 +1,5 @@
 -- Title: Top species counts by region
--- Description: Shows the top species by summed monthly observation count for a selected observed-date timespan. Configure period_start as a Metabase Field Filter mapped to trends.period_start, region_key as a Metabase Field Filter mapped to trends.region_key, and top_n as an optional Number variable.
+-- Description: Shows the top species by summed monthly observation count for a selected observed-date timespan. Bind period_start to trends.period_start and region_key to trends.region_key; top_n is optional.
 
 WITH species_counts AS (
     SELECT

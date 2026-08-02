@@ -10,6 +10,7 @@ from datetime import date, datetime, time, timedelta
 
 from inaturalist_client import OSA_PROJECTS, ProjectDownloadSummary
 from pipeline import Pipeline, PipelineContext
+from pipeline.constants import DEFAULT_DOWNLOAD_MODE, DEFAULT_FAILURE_COOLDOWN_SECONDS, DEFAULT_LIST_STEPS, DEFAULT_LOAD_DATE, DEFAULT_OBSERVATIONS_PER_PAGE, DEFAULT_PIPELINE_STEP_NAMES, DEFAULT_REQUEST_COOLDOWN_SECONDS, DEFAULT_TAXONOMY_MODE, DEFAULT_TREND_MODE, DEFAULT_TREND_MONTH, DEFAULT_TREND_YEAR, DEFAULT_UPDATED_SINCE
 from pipeline.pipeline_step import PipelineStep
 from pipeline.steps import (
     DownloadRawDataStep,
@@ -30,90 +31,24 @@ _STEP_FACTORIES = {
     ReconcileProjectObservationsStep.name: ReconcileProjectObservationsStep,
 }
 
-_DEFAULT_STEP_NAMES = [
-    DownloadRawDataStep.name,
-    MigrateDatabaseStep.name,
-    LoadRawDataToDatabaseStep.name,
-]
-
-
 def _parse_arguments() -> argparse.Namespace:
     """Parse command-line arguments.
 
     @return Parsed command-line arguments.
     """
     argument_parser = argparse.ArgumentParser(description="Run the OSA iNaturalist data pipeline.")
-    argument_parser.add_argument(
-        "--steps",
-        nargs="+",
-        choices=sorted(_STEP_FACTORIES.keys()),
-        default=_DEFAULT_STEP_NAMES,
-        help="Pipeline steps to run, in the order provided.",
-    )
-    argument_parser.add_argument(
-        "--list-steps",
-        action="store_true",
-        help="List available pipeline steps and exit.",
-    )
-    argument_parser.add_argument(
-        "--per-page",
-        type=int,
-        default=100,
-        help="Requested observations per API batch.",
-    )
-    argument_parser.add_argument(
-        "--request-cooldown",
-        type=float,
-        default=1.1,
-        help="Seconds to wait after each successful API request.",
-    )
-    argument_parser.add_argument(
-        "--failure-cooldown",
-        type=float,
-        default=60.0,
-        help="Seconds to wait after failed API requests before retrying.",
-    )
-    argument_parser.add_argument(
-        "--download-mode",
-        choices=("incremental", "full"),
-        default="incremental",
-        help="Use incremental updated-since downloads or full project downloads.",
-    )
-    argument_parser.add_argument(
-        "--updated-since",
-        default=None,
-        help="Override incremental cutoff as an ISO datetime. Defaults to previous local midnight.",
-    )
-    argument_parser.add_argument(
-        "--load-date",
-        default=None,
-        help="Only load raw JSON files for this snapshot date, formatted as YYYYMMDD.",
-    )
-    argument_parser.add_argument(
-        "--trend-year",
-        type=int,
-        default=None,
-        help="First year of the monthly trend period range to download.",
-    )
-    argument_parser.add_argument(
-        "--trend-month",
-        type=int,
-        choices=range(1, 13),
-        default=None,
-        help="First month of the monthly trend period range to download.",
-    )
-    argument_parser.add_argument(
-        "--trend-mode",
-        choices=("since", "historical"),
-        default="since",
-        help="Download trends since a starting month or the full available history.",
-    )
-    argument_parser.add_argument(
-        "--taxonomy-mode",
-        choices=("missing", "full"),
-        default="missing",
-        help="Enrich missing taxonomy nodes or refresh all stored taxa.",
-    )
+    argument_parser.add_argument("--steps", nargs="+", choices=sorted(_STEP_FACTORIES.keys()), default=DEFAULT_PIPELINE_STEP_NAMES, help="Pipeline steps to run, in the order provided.")
+    argument_parser.add_argument("--list-steps", action="store_true", default=DEFAULT_LIST_STEPS, help="List available pipeline steps and exit.")
+    argument_parser.add_argument("--per-page", type=int, default=DEFAULT_OBSERVATIONS_PER_PAGE, help="Requested observations per API batch.")
+    argument_parser.add_argument("--request-cooldown", type=float, default=DEFAULT_REQUEST_COOLDOWN_SECONDS, help="Seconds to wait after each successful API request.")
+    argument_parser.add_argument("--failure-cooldown", type=float, default=DEFAULT_FAILURE_COOLDOWN_SECONDS, help="Seconds to wait after failed API requests before retrying.")
+    argument_parser.add_argument("--download-mode", choices=("incremental", "full"), default=DEFAULT_DOWNLOAD_MODE, help="Use incremental updated-since downloads or full project downloads.")
+    argument_parser.add_argument("--updated-since", default=DEFAULT_UPDATED_SINCE, help="Override incremental cutoff as an ISO datetime. Defaults to previous local midnight.")
+    argument_parser.add_argument("--load-date", default=DEFAULT_LOAD_DATE, help="Only load raw JSON files for this snapshot date, formatted as YYYYMMDD.")
+    argument_parser.add_argument("--trend-year", type=int, default=DEFAULT_TREND_YEAR, help="First year of the monthly trend period range to download.")
+    argument_parser.add_argument("--trend-month", type=int, choices=range(1, 13), default=DEFAULT_TREND_MONTH, help="First month of the monthly trend period range to download.")
+    argument_parser.add_argument("--trend-mode", choices=("since", "historical"), default=DEFAULT_TREND_MODE, help="Download trends since a starting month or the full available history.")
+    argument_parser.add_argument("--taxonomy-mode", choices=("missing", "full"), default=DEFAULT_TAXONOMY_MODE, help="Enrich missing taxonomy nodes or refresh all stored taxa.")
     parsed_arguments = argument_parser.parse_args()
     _validate_trend_arguments(argument_parser, parsed_arguments)
     return parsed_arguments
@@ -140,12 +75,7 @@ def _print_download_summaries(download_summaries: list[ProjectDownloadSummary]):
     @param download_summaries Download summaries created by the pipeline.
     """
     for project_summary in download_summaries:
-        print(
-            f"{project_summary.project_alias}: "
-            f"{project_summary.page_count} pages, "
-            f"{project_summary.total_results} observations, "
-            f"{len(project_summary.saved_file_paths)} files"
-        )
+        print(f"{project_summary.project_alias}: {project_summary.page_count} pages, {project_summary.total_results} observations, {len(project_summary.saved_file_paths)} files")
 
 
 def _get_incremental_updated_since(arguments: argparse.Namespace) -> datetime | str | None:

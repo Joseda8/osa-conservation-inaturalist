@@ -62,10 +62,9 @@ class TrendLoader:
                 value,
                 source_endpoint,
                 source_params,
-                raw_json,
-                downloaded_at
+                loaded_at
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
             ON CONFLICT (
                 region_key,
                 metric_name,
@@ -82,8 +81,7 @@ class TrendLoader:
                 value = EXCLUDED.value,
                 source_endpoint = EXCLUDED.source_endpoint,
                 source_params = EXCLUDED.source_params,
-                raw_json = EXCLUDED.raw_json,
-                downloaded_at = now()
+                loaded_at = now()
             """,
             (
                 region_config.key,
@@ -99,6 +97,5 @@ class TrendLoader:
                 trend_record.value,
                 trend_record.source_endpoint,
                 Jsonb(trend_record.source_params),
-                Jsonb(trend_record.raw_json),
             ),
         )

@@ -1,5 +1,5 @@
 -- Title: Observations by day by project
--- Description: Counts observations per observed day for each project. The Metabase observed_on field filter can limit the date range.
+-- Description: Counts observations per observed day for each project. Bind observed_on to limit the date range.
 
 SELECT
     project_alias,

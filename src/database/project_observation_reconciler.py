@@ -37,11 +37,7 @@ class ProjectObservationReconciler:
             """,
             (project_config.alias,),
         ).fetchall()
-        LOGGER.info(
-            "Loaded %s local observation IDs for project %s from PostgreSQL",
-            len(local_observation_rows),
-            project_config.alias,
-        )
+        LOGGER.info("Loaded %s local observation IDs for project %s from PostgreSQL", len(local_observation_rows), project_config.alias)
         return {int(local_observation_row[0]) for local_observation_row in local_observation_rows}
 
     def delete_stale_observations(
@@ -55,26 +51,15 @@ class ProjectObservationReconciler:
         @param stale_observation_ids Local observation IDs no longer in the project.
         @return Number of deleted observations.
         """
-        LOGGER.info(
-            "Project %s has %s stale local observation IDs",
-            project_config.alias,
-            len(stale_observation_ids),
-        )
+        LOGGER.info("Project %s has %s stale local observation IDs", project_config.alias, len(stale_observation_ids))
         if not stale_observation_ids:
             LOGGER.info("No stale observation IDs found for project %s", project_config.alias)
             LOGGER.info("Deleted 0 stale observations for project %s", project_config.alias)
             return 0
 
-        LOGGER.info(
-            "Deleting stale observation data for project %s",
-            project_config.alias,
-        )
+        LOGGER.info("Deleting stale observation data for project %s", project_config.alias)
         stale_observation_id_list = sorted(stale_observation_ids)
         with self._database_connection.transaction():
-            self._remove_stale_observations_from_raw_pages(
-                project_config.alias,
-                stale_observation_id_list,
-            )
             deleted_observation_count = self._delete_stale_project_data(
                 project_config.alias,
                 stale_observation_id_list,
@@ -82,90 +67,8 @@ class ProjectObservationReconciler:
             self._delete_orphan_observers()
             self._delete_orphan_taxa()
 
-        LOGGER.info(
-            "Deleted %s stale observations for project %s",
-            deleted_observation_count,
-            project_config.alias,
-        )
+        LOGGER.info("Deleted %s stale observations for project %s", deleted_observation_count, project_config.alias)
         return deleted_observation_count
-
-    def _remove_stale_observations_from_raw_pages(
-        self,
-        project_alias: str,
-        stale_observation_ids: list[int],
-    ):
-        """Remove stale observation payloads from raw JSON page rows.
-
-        @param project_alias Local project alias.
-        @param stale_observation_ids Stale local observation IDs.
-        """
-        updated_raw_page_rows = self._database_connection.execute(
-            """
-            WITH cleaned_pages AS (
-                SELECT
-                    raw_pages.project_alias,
-                    raw_pages.download_date,
-                    raw_pages.page_number,
-                    COALESCE(
-                        jsonb_agg(result_items.result ORDER BY result_items.result_index)
-                            FILTER (
-                                WHERE NOT (
-                                    (result_items.result->>'id')::BIGINT = ANY(%s::BIGINT[])
-                                )
-                            ),
-                        '[]'::JSONB
-                    ) AS cleaned_results,
-                    COUNT(*) FILTER (
-                        WHERE NOT ((result_items.result->>'id')::BIGINT = ANY(%s::BIGINT[]))
-                    ) AS cleaned_result_count,
-                    COUNT(*) FILTER (
-                        WHERE (result_items.result->>'id')::BIGINT = ANY(%s::BIGINT[])
-                    ) AS removed_result_count,
-                    MIN((result_items.result->>'id')::BIGINT) FILTER (
-                        WHERE NOT ((result_items.result->>'id')::BIGINT = ANY(%s::BIGINT[]))
-                    ) AS first_observation_id,
-                    MAX((result_items.result->>'id')::BIGINT) FILTER (
-                        WHERE NOT ((result_items.result->>'id')::BIGINT = ANY(%s::BIGINT[]))
-                    ) AS last_observation_id
-                FROM raw_observation_pages AS raw_pages
-                CROSS JOIN LATERAL jsonb_array_elements(raw_pages.raw_json->'results')
-                    WITH ORDINALITY AS result_items(result, result_index)
-                WHERE raw_pages.project_alias = %s
-                GROUP BY
-                    raw_pages.project_alias,
-                    raw_pages.download_date,
-                    raw_pages.page_number
-            )
-            UPDATE raw_observation_pages AS raw_pages
-            SET
-                raw_json = jsonb_set(raw_pages.raw_json, '{results}', cleaned_pages.cleaned_results),
-                result_count = cleaned_pages.cleaned_result_count,
-                first_observation_id = cleaned_pages.first_observation_id,
-                last_observation_id = cleaned_pages.last_observation_id
-            FROM cleaned_pages
-            WHERE raw_pages.project_alias = cleaned_pages.project_alias
-                AND raw_pages.download_date = cleaned_pages.download_date
-                AND raw_pages.page_number = cleaned_pages.page_number
-                AND cleaned_pages.removed_result_count > 0
-            RETURNING cleaned_pages.removed_result_count
-            """,
-            (
-                stale_observation_ids,
-                stale_observation_ids,
-                stale_observation_ids,
-                stale_observation_ids,
-                stale_observation_ids,
-                project_alias,
-            ),
-        ).fetchall()
-        removed_raw_observation_count = sum(
-            int(updated_raw_page_row[0]) for updated_raw_page_row in updated_raw_page_rows
-        )
-        LOGGER.info(
-            "Removed %s stale observation payloads from raw pages for project %s",
-            removed_raw_observation_count,
-            project_alias,
-        )
 
     def _delete_stale_project_data(
         self,

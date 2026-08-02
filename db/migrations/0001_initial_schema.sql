@@ -1,23 +1,10 @@
+-- OSA Conservation iNaturalist database migration 0001: baseline schema.
+-- Apply this script once to an empty PostgreSQL database.
+
 CREATE TABLE projects (
     alias TEXT PRIMARY KEY,
     slug TEXT NOT NULL UNIQUE,
     display_name TEXT NOT NULL
-);
-
-CREATE TABLE raw_observation_pages (
-    project_alias TEXT NOT NULL REFERENCES projects(alias),
-    download_date DATE NOT NULL,
-    page_number INTEGER NOT NULL,
-    file_path TEXT NOT NULL,
-    api_total_results INTEGER,
-    api_page INTEGER,
-    api_per_page INTEGER,
-    result_count INTEGER NOT NULL,
-    first_observation_id BIGINT,
-    last_observation_id BIGINT,
-    raw_json JSONB NOT NULL,
-    loaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    PRIMARY KEY (project_alias, download_date, page_number)
 );
 
 CREATE TABLE taxa (
@@ -37,7 +24,8 @@ CREATE TABLE taxa (
     endemic BOOLEAN,
     threatened BOOLEAN,
     extinct BOOLEAN,
-    raw_json JSONB NOT NULL
+    loaded_from TEXT NOT NULL,
+    loaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE observers (
@@ -46,7 +34,8 @@ CREATE TABLE observers (
     name TEXT,
     observations_count INTEGER,
     species_count INTEGER,
-    raw_json JSONB NOT NULL
+    loaded_from TEXT NOT NULL,
+    loaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE observations (
@@ -88,9 +77,9 @@ CREATE TABLE observations (
     faves_count INTEGER,
     taxon_id BIGINT REFERENCES taxa(taxon_id),
     observer_id BIGINT REFERENCES observers(observer_id),
-    raw_json JSONB NOT NULL,
+    loaded_from TEXT NOT NULL,
     loaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    PRIMARY KEY (project_alias, download_date, observation_id)
+    PRIMARY KEY (project_alias, observation_id)
 );
 
 CREATE TABLE observation_photos (
@@ -104,10 +93,11 @@ CREATE TABLE observation_photos (
     hidden BOOLEAN,
     width INTEGER,
     height INTEGER,
-    raw_json JSONB NOT NULL,
-    PRIMARY KEY (project_alias, download_date, observation_id, photo_id),
-    FOREIGN KEY (project_alias, download_date, observation_id)
-        REFERENCES observations(project_alias, download_date, observation_id)
+    loaded_from TEXT NOT NULL,
+    loaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (project_alias, observation_id, photo_id),
+    FOREIGN KEY (project_alias, observation_id)
+        REFERENCES observations(project_alias, observation_id)
 );
 
 CREATE TABLE project_observations (
@@ -118,10 +108,11 @@ CREATE TABLE project_observations (
     uuid UUID,
     inat_project_id BIGINT,
     preferences_json JSONB,
-    raw_json JSONB NOT NULL,
-    PRIMARY KEY (project_alias, download_date, project_observation_id),
-    FOREIGN KEY (project_alias, download_date, observation_id)
-        REFERENCES observations(project_alias, download_date, observation_id)
+    loaded_from TEXT NOT NULL,
+    loaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (project_alias, project_observation_id),
+    FOREIGN KEY (project_alias, observation_id)
+        REFERENCES observations(project_alias, observation_id)
 );
 
 CREATE TABLE observation_field_values (
@@ -132,10 +123,36 @@ CREATE TABLE observation_field_values (
     field_id BIGINT,
     field_name TEXT,
     value TEXT,
-    raw_json JSONB NOT NULL,
-    PRIMARY KEY (project_alias, download_date, observation_id, ofv_index),
-    FOREIGN KEY (project_alias, download_date, observation_id)
-        REFERENCES observations(project_alias, download_date, observation_id)
+    loaded_from TEXT NOT NULL,
+    loaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (project_alias, observation_id, ofv_index),
+    FOREIGN KEY (project_alias, observation_id)
+        REFERENCES observations(project_alias, observation_id)
+);
+
+CREATE TABLE trends (
+    region_key TEXT NOT NULL,
+    region_type TEXT NOT NULL,
+    region_label TEXT NOT NULL,
+    metric_name TEXT NOT NULL,
+    period_type TEXT NOT NULL,
+    period_start DATE NOT NULL,
+    period_end DATE NOT NULL,
+    dimension_type TEXT NOT NULL DEFAULT 'none',
+    dimension_id TEXT NOT NULL DEFAULT 'none',
+    dimension_label TEXT NOT NULL DEFAULT 'none',
+    value NUMERIC NOT NULL,
+    source_endpoint TEXT NOT NULL,
+    source_params JSONB NOT NULL,
+    loaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (
+        region_key,
+        metric_name,
+        period_type,
+        period_start,
+        dimension_type,
+        dimension_id
+    )
 );
 
 CREATE INDEX idx_observations_project_date
@@ -161,3 +178,12 @@ CREATE INDEX idx_taxa_iconic_taxon_name
 
 CREATE INDEX idx_observation_field_values_field_name
     ON observation_field_values(field_name);
+
+CREATE INDEX idx_trends_metric_period
+    ON trends(metric_name, period_type, period_start, period_end);
+
+CREATE INDEX idx_trends_region_period
+    ON trends(region_key, period_type, period_start, period_end);
+
+CREATE INDEX idx_trends_dimension
+    ON trends(dimension_type, dimension_id);

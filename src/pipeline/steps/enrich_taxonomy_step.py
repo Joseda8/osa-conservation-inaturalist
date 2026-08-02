@@ -12,6 +12,10 @@ from inaturalist_client.constants import TAXON_ENRICHMENT_BATCH_SIZE
 from pipeline.pipeline_context import PipelineContext
 
 
+# Source reference used for taxa fetched by the enrichment step.
+TAXON_API_SOURCE = "iNaturalist API v2 /taxa"
+
+
 class EnrichTaxonomyStep:
     """Pipeline step that completes stored taxonomy lineages."""
 
@@ -22,10 +26,7 @@ class EnrichTaxonomyStep:
 
         @param pipeline_context Shared pipeline state.
         """
-        LOGGER.info(
-            "Starting taxonomy enrichment in %s mode",
-            pipeline_context.taxonomy_mode,
-        )
+        LOGGER.info("Starting taxonomy enrichment in %s mode", pipeline_context.taxonomy_mode)
         with open_database_connection() as database_connection:
             taxon_repository = TaxonRepository(database_connection)
             if pipeline_context.taxonomy_mode == "full":
@@ -46,10 +47,7 @@ class EnrichTaxonomyStep:
                 if not missing_taxon_ids:
                     break
 
-                LOGGER.info(
-                    "Found %s missing taxonomy lineage nodes",
-                    len(missing_taxon_ids),
-                )
+                LOGGER.info("Found %s missing taxonomy lineage nodes", len(missing_taxon_ids))
                 self._enrich_taxon_ids(
                     missing_taxon_ids,
                     database_connection,
@@ -60,10 +58,7 @@ class EnrichTaxonomyStep:
 
             with database_connection.transaction():
                 stored_taxon_count = len(taxon_repository.get_all_taxon_ids())
-            LOGGER.info(
-                "Taxonomy enrichment complete with %s stored taxa",
-                stored_taxon_count,
-            )
+            LOGGER.info("Taxonomy enrichment complete with %s stored taxa", stored_taxon_count)
 
     def _enrich_taxon_ids(
         self,
@@ -92,12 +87,7 @@ class EnrichTaxonomyStep:
             taxon_id_batch = taxon_ids[
                 batch_start : batch_start + TAXON_ENRICHMENT_BATCH_SIZE
             ]
-            LOGGER.info(
-                "Requesting taxonomy batch %s/%s with %s taxa",
-                batch_number,
-                total_batches,
-                len(taxon_id_batch),
-            )
+            LOGGER.info("Requesting taxonomy batch %s/%s with %s taxa", batch_number, total_batches, len(taxon_id_batch))
             taxon_rows = pipeline_context.get_inaturalist_client().get_taxa(
                 taxon_id_batch,
                 request_cooldown_seconds=pipeline_context.request_cooldown_seconds,
@@ -105,10 +95,8 @@ class EnrichTaxonomyStep:
                 force_refresh=force_refresh,
             )
             with database_connection.transaction():
-                stored_taxon_count = taxon_repository.upsert_taxa(taxon_rows)
-            LOGGER.info(
-                "Stored %s taxa from taxonomy batch %s/%s",
-                stored_taxon_count,
-                batch_number,
-                total_batches,
-            )
+                stored_taxon_count = taxon_repository.upsert_taxa(
+                    taxon_rows,
+                    TAXON_API_SOURCE,
+                )
+            LOGGER.info("Stored %s taxa from taxonomy batch %s/%s", stored_taxon_count, batch_number, total_batches)

@@ -1,5 +1,5 @@
 -- Title: Monthly species count over time
--- Description: Shows how a selected species observation count changes by month and region. Configure period_start as a Metabase Field Filter mapped to trends.period_start, species as a Metabase Field Filter mapped to trends.dimension_label, and region_key as a Metabase Field Filter mapped to trends.region_key.
+-- Description: Shows how a selected species observation count changes by month and region. Bind period_start to trends.period_start, species to trends.dimension_label, and region_key to trends.region_key.
 
 SELECT
     period_start,

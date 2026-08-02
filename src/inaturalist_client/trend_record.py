@@ -23,7 +23,6 @@ class TrendRecord:
     @param value Metric value.
     @param source_endpoint iNaturalist API endpoint used.
     @param source_params API parameters used.
-    @param raw_json Raw source fragment for the trend row.
     @param dimension_type Optional trend dimension type.
     @param dimension_id Optional trend dimension ID.
     @param dimension_label Optional trend dimension label.
@@ -37,7 +36,6 @@ class TrendRecord:
     value: int
     source_endpoint: str
     source_params: dict[str, Any]
-    raw_json: dict[str, Any]
     dimension_type: str = "none"
     dimension_id: str = "none"
     dimension_label: str = "none"

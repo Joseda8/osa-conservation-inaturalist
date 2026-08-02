@@ -1,5 +1,5 @@
 # OSA Conservation - iNaturalist Analyzer
-This project provides tools to analyze OSA Conversation data from iNaturalists and other sources.
+This project provides tools to analyze OSA Conservation data from iNaturalist and other sources.
 
 ## Projects
 The default pipeline downloads raw observation data for:
@@ -27,8 +27,8 @@ data/obs/20260606/raw_data/obs_20260606_page_000001.json
 
 The page number padding is computed from the total results reported by iNaturalist and the requested batch size.
 
-### Migrate database
-Applies pending PostgreSQL migrations from `db/migrations`.
+### Initialize database
+Applies the PostgreSQL 1.0 baseline migration at `db/migrations/0001_initial_schema.sql`. Apply it once to a new, empty database before loading data. Future schema migrations must preserve the ability to roll back to this baseline.
 
 ### Load raw data to database
 Loads downloaded raw JSON files into PostgreSQL.
@@ -75,7 +75,7 @@ Run an incremental download with an explicit local cutoff:
 PYTHONPATH=src python3 src/main.py --steps download-raw-data --download-mode incremental --updated-since 2026-06-06T00:00:00-06:00
 ```
 
-Run database migrations:
+Initialize a new database:
 
 ```bash
 PYTHONPATH=src python3 src/main.py --steps migrate-db
@@ -93,10 +93,11 @@ Load raw data for one snapshot date:
 PYTHONPATH=src python3 src/main.py --steps load-raw-data-to-db --load-date 20260607
 ```
 
-Run migrations and then load raw data:
+Initialize a new database and load raw data:
 
 ```bash
-PYTHONPATH=src python3 src/main.py --steps migrate-db load-raw-data-to-db
+PYTHONPATH=src python3 src/main.py --steps migrate-db
+PYTHONPATH=src python3 src/main.py --steps load-raw-data-to-db
 ```
 
 Delete normalized observations that no longer belong to the configured iNaturalist projects:

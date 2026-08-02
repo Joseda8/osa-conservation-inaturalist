@@ -61,10 +61,11 @@ class TaxonRepository:
         ).fetchall()
         return [int(missing_taxon_row[0]) for missing_taxon_row in missing_taxon_rows]
 
-    def upsert_taxa(self, taxon_json_rows: list[dict[str, Any]]) -> int:
+    def upsert_taxa(self, taxon_json_rows: list[dict[str, Any]], loaded_from: str) -> int:
         """Insert or update taxon metadata.
 
         @param taxon_json_rows Taxon API response rows.
+        @param loaded_from Source that supplied the taxon rows.
         @return Number of processed taxon rows.
         """
         for taxon_json in taxon_json_rows:
@@ -87,9 +88,10 @@ class TaxonRepository:
                     endemic,
                     threatened,
                     extinct,
-                    raw_json
+                    loaded_from,
+                    loaded_at
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
                 ON CONFLICT (taxon_id) DO UPDATE SET
                     scientific_name = EXCLUDED.scientific_name,
                     common_name = EXCLUDED.common_name,
@@ -106,7 +108,8 @@ class TaxonRepository:
                     endemic = EXCLUDED.endemic,
                     threatened = EXCLUDED.threatened,
                     extinct = EXCLUDED.extinct,
-                    raw_json = EXCLUDED.raw_json
+                    loaded_from = EXCLUDED.loaded_from,
+                    loaded_at = now()
                 """,
                 (
                     taxon_json["id"],
@@ -125,7 +128,7 @@ class TaxonRepository:
                     taxon_json.get("endemic"),
                     taxon_json.get("threatened"),
                     taxon_json.get("extinct"),
-                    Jsonb(taxon_json),
+                    loaded_from,
                 ),
             )
         return len(taxon_json_rows)

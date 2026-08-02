@@ -1,5 +1,5 @@
 -- Title: Delete snapshot date from database
--- Description: Deletes raw pages, observations, and project-scoped child rows for one download_date.
+-- Description: Deletes observations and project-scoped child rows for one download_date.
 --
 -- Usage:
 --   docker compose exec -T postgres psql -U osa -d osa_inaturalist \
@@ -43,11 +43,6 @@ deleted_observations AS (
         AND observation_rows.observation_id = targets.observation_id
     RETURNING observation_rows.project_alias
 ),
-deleted_raw_pages AS (
-    DELETE FROM raw_observation_pages
-    WHERE download_date = DATE :'snapshot_date'
-    RETURNING project_alias
-),
 deleted_orphan_observers AS (
     DELETE FROM observers AS observer_rows
     WHERE NOT EXISTS (
@@ -83,10 +78,6 @@ GROUP BY project_alias
 UNION ALL
 SELECT 'observations', project_alias, COUNT(*)
 FROM deleted_observations
-GROUP BY project_alias
-UNION ALL
-SELECT 'raw_observation_pages', project_alias, COUNT(*)
-FROM deleted_raw_pages
 GROUP BY project_alias
 UNION ALL
 SELECT 'orphan_observers', NULL, COUNT(*)
