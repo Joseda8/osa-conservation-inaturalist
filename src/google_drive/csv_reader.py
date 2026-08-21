@@ -5,15 +5,13 @@
 """
 
 import io
-import json
 import os
-from pathlib import Path
 
-from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 
-from .constants import DEFAULT_GOOGLE_SERVICE_ACCOUNT_JSON_PATH, DEFAULT_OBSERVATIONS_CSV_FILE_NAME, GOOGLE_DRIVE_API_NAME, GOOGLE_DRIVE_API_VERSION, GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME_ENV_VAR, GOOGLE_DRIVE_READ_SCOPE, GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR, GOOGLE_SERVICE_ACCOUNT_JSON_ENV_VAR, GOOGLE_SERVICE_ACCOUNT_JSON_PATH_ENV_VAR, MAXIMUM_MATCHING_FILE_COUNT
+from .constants import DEFAULT_OBSERVATIONS_CSV_FILE_NAME, GOOGLE_DRIVE_API_NAME, GOOGLE_DRIVE_API_VERSION, GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME_ENV_VAR, GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR, MAXIMUM_MATCHING_FILE_COUNT
+from .oauth_credentials import GoogleDriveOAuthCredentials
 
 
 class GoogleDriveCsvReader:
@@ -26,7 +24,7 @@ class GoogleDriveCsvReader:
         """
         folder_id = self._get_required_environment_variable(GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR)
         file_name = os.environ.get(GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME_ENV_VAR, DEFAULT_OBSERVATIONS_CSV_FILE_NAME)
-        credentials = Credentials.from_service_account_info(self._get_service_account_info(), scopes=[GOOGLE_DRIVE_READ_SCOPE])
+        credentials = GoogleDriveOAuthCredentials().get()
         drive_service = build(GOOGLE_DRIVE_API_NAME, GOOGLE_DRIVE_API_VERSION, credentials=credentials)
         file_id = self._find_file_id(drive_service, folder_id, file_name)
         request = drive_service.files().get_media(fileId=file_id, supportsAllDrives=True)
@@ -50,22 +48,6 @@ class GoogleDriveCsvReader:
         if not value:
             raise RuntimeError(f"Set {variable_name} before reading CSV files from Google Drive.")
         return value
-
-    @staticmethod
-    def _get_service_account_info() -> dict:
-        """Load service account credentials from an environment variable or local file.
-
-        @return Parsed Google service account credentials.
-        @raises RuntimeError If no credentials source is available.
-        """
-        service_account_json = os.environ.get(GOOGLE_SERVICE_ACCOUNT_JSON_ENV_VAR)
-        if service_account_json:
-            return json.loads(service_account_json)
-
-        credential_path = Path(os.environ.get(GOOGLE_SERVICE_ACCOUNT_JSON_PATH_ENV_VAR, DEFAULT_GOOGLE_SERVICE_ACCOUNT_JSON_PATH))
-        if not credential_path.is_file():
-            raise RuntimeError(f"Set {GOOGLE_SERVICE_ACCOUNT_JSON_ENV_VAR} or create the ignored credential file: {credential_path}")
-        return json.loads(credential_path.read_text())
 
     @staticmethod
     def _find_file_id(drive_service, folder_id: str, file_name: str) -> str:

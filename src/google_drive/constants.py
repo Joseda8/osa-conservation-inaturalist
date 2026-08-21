@@ -10,14 +10,26 @@ from pathlib import Path
 # Required environment variable containing the destination Google Drive folder ID.
 GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR = "GOOGLE_DRIVE_UPLOAD_FOLDER_ID"
 
-# Environment variable containing the complete Google service account JSON.
-GOOGLE_SERVICE_ACCOUNT_JSON_ENV_VAR = "GOOGLE_SERVICE_ACCOUNT_JSON"
+# Optional environment variable overriding the local OAuth client JSON path.
+GOOGLE_DRIVE_OAUTH_CLIENT_JSON_PATH_ENV_VAR = "GOOGLE_DRIVE_OAUTH_CLIENT_JSON_PATH"
 
-# Optional environment variable overriding the local service account JSON path.
-GOOGLE_SERVICE_ACCOUNT_JSON_PATH_ENV_VAR = "GOOGLE_SERVICE_ACCOUNT_JSON_PATH"
+# Default ignored local path containing the OAuth desktop client JSON.
+DEFAULT_GOOGLE_DRIVE_OAUTH_CLIENT_JSON_PATH = Path(".secrets") / "google-oauth-client.json"
 
-# Default ignored local path containing Google service account credentials.
-DEFAULT_GOOGLE_SERVICE_ACCOUNT_JSON_PATH = Path(".secrets") / "google-service-account.json"
+# Environment variable containing the OAuth refresh token JSON for GitHub Actions.
+GOOGLE_DRIVE_OAUTH_TOKEN_JSON_ENV_VAR = "GOOGLE_DRIVE_OAUTH_TOKEN_JSON"
+
+# Optional environment variable overriding the local OAuth refresh token path.
+GOOGLE_DRIVE_OAUTH_TOKEN_PATH_ENV_VAR = "GOOGLE_DRIVE_OAUTH_TOKEN_PATH"
+
+# Default ignored local path containing the OAuth refresh token JSON.
+DEFAULT_GOOGLE_DRIVE_OAUTH_TOKEN_PATH = Path(".secrets") / "google-oauth-token.json"
+
+# Local TCP port value that asks the OAuth library to select an available port.
+GOOGLE_DRIVE_OAUTH_LOCAL_SERVER_PORT = 0
+
+# File permissions that restrict locally saved OAuth credentials to their owner.
+PRIVATE_CREDENTIAL_FILE_MODE = 0o600
 
 # Optional environment variable overriding the uploaded observations CSV filename.
 GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME_ENV_VAR = "GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME"
@@ -25,11 +37,8 @@ GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME_ENV_VAR = "GOOGLE_DRIVE_OBSERVATIONS_CSV
 # Default filename for the observations CSV uploaded to Google Drive.
 DEFAULT_OBSERVATIONS_CSV_FILE_NAME = "observations.csv"
 
-# Google Drive OAuth scope required to find, create, and replace files.
-GOOGLE_DRIVE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/drive"
-
-# Google Drive OAuth scope required to find and download files.
-GOOGLE_DRIVE_READ_SCOPE = "https://www.googleapis.com/auth/drive.readonly"
+# Google Drive OAuth scope required to read, create, and replace generated files.
+GOOGLE_DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"
 
 # Google Drive API service name.
 GOOGLE_DRIVE_API_NAME = "drive"

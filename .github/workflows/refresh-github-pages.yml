@@ -34,7 +34,7 @@ jobs:
       - name: Refresh GitHub Pages source data
         env:
           GOOGLE_DRIVE_UPLOAD_FOLDER_ID: ${{ vars.GOOGLE_DRIVE_UPLOAD_FOLDER_ID }}
-          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_DRIVE_OAUTH_TOKEN_JSON: ${{ secrets.GOOGLE_DRIVE_OAUTH_TOKEN_JSON }}
           PYTHONPATH: src
         run: .venv/bin/python src/main.py --steps refresh-github-pages
 

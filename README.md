@@ -89,15 +89,15 @@ PYTHONPATH=src python3 src/main.py --steps download-raw-data
 Run the initial database analysis and upload its CSV export to Google Drive:
 
 ```bash
-# Save a rotated service-account credential at .secrets/google-service-account.json.
+# Save the OAuth desktop client JSON at .secrets/google-oauth-client.json.
 PYTHONPATH=src python3 src/main.py --steps analyze-and-upload-to-drive
 ```
 
-The step runs `SELECT * FROM observations LIMIT 5;`, writes the result to an in-memory CSV with headers, and creates or replaces `observations.csv` in the configured Google Drive folder. Set `GOOGLE_DRIVE_UPLOAD_FOLDER_ID` in the ignored `.env` file to the ID of OSA's `processed-data` folder. Share that folder with the service-account email as an Editor, enable the Google Drive API for that account, and never commit its credential JSON. The default credential path is ignored by Git. Set `GOOGLE_SERVICE_ACCOUNT_JSON` or `GOOGLE_SERVICE_ACCOUNT_JSON_PATH` to use a different credential source; set `GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME` to override the file name.
+The first run opens a browser for the selected Google user to authorize the pipeline. Its refresh token is saved at `.secrets/google-oauth-token.json`. The step runs `SELECT * FROM observations LIMIT 5;`, writes the result to an in-memory CSV with headers, and creates or replaces `observations.csv` in the configured Google Drive folder. Set `GOOGLE_DRIVE_UPLOAD_FOLDER_ID` in the ignored `.env` file to the ID of OSA's `processed-data` folder. Never commit either OAuth JSON file. Set `GOOGLE_DRIVE_OAUTH_CLIENT_JSON_PATH` or `GOOGLE_DRIVE_OAUTH_TOKEN_PATH` to use different local paths; set `GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME` to override the file name.
 
 ## GitHub Actions
 
-The manual **Refresh GitHub Pages** workflow downloads `observations.csv`, builds the React site, and deploys it to GitHub Pages. Before running it, add `GOOGLE_DRIVE_UPLOAD_FOLDER_ID` as an Actions variable and the complete service-account JSON as an Actions secret named `GOOGLE_SERVICE_ACCOUNT_JSON`. The deployed CSV data is public, so it must contain only information suitable for public release.
+The manual **Refresh GitHub Pages** workflow downloads `observations.csv`, builds the React site, and deploys it to GitHub Pages. Before running it, add `GOOGLE_DRIVE_UPLOAD_FOLDER_ID` as an Actions variable and the complete OAuth token JSON as an Actions secret named `GOOGLE_DRIVE_OAUTH_TOKEN_JSON`. The deployed CSV data is public, so it must contain only information suitable for public release.
 
 Run a full raw data download:
 
