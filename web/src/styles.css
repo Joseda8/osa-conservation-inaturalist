@@ -51,7 +51,12 @@ button {
   margin: 0 0 2.5rem;
 }
 
-.sidebar > nav {
+.sidebar-navigation {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.sidebar-navigation-section {
   display: grid;
   gap: 0.5rem;
 }
@@ -94,6 +99,38 @@ button {
   gap: 0.25rem;
   margin: 0.75rem 0 0 0.9rem;
   padding-left: 0.75rem;
+}
+
+.sidebar-report-navigation nav {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.report-search {
+  background: #fff;
+  border: 1px solid #cddbd0;
+  border-radius: 0.35rem;
+  font: inherit;
+  padding: 0.5rem;
+}
+
+.report-search:focus-visible {
+  outline: 2px solid #93d6a8;
+  outline-offset: 2px;
+}
+
+.report-search-empty {
+  color: #d5e4d8;
+  font-size: 0.875rem;
+  margin: 0.25rem 0;
+}
+
+.visually-hidden {
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
 }
 
 .sidebar-report-navigation-item {
@@ -305,12 +342,15 @@ tbody tr:last-child td {
     margin-bottom: 1.5rem;
   }
 
-  .sidebar > nav {
+  .sidebar-navigation {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sidebar-report-navigation nav {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .sidebar-report-navigation {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     margin-left: 0;
   }
 

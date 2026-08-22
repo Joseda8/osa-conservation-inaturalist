@@ -6,8 +6,8 @@ import { DASHBOARD_SECTIONS, OSA_STATS_DATA_FILES, OSA_STATS_REPORTS } from "./f
 import { useDashboardReports } from "./features/dashboard/hooks/useDashboardReports";
 
 export default function App() {
-  const [activeSectionId, setActiveSectionId] = useState(DASHBOARD_SECTIONS[0].id);
-  const [activeReportId, setActiveReportId] = useState(OSA_STATS_REPORTS[0].id);
+  const [activeSectionId, setActiveSectionId] = useState("osa-stats");
+  const [activeReportId, setActiveReportId] = useState("observation-counts");
   const { errorMessage, reportContents } = useDashboardReports(OSA_STATS_DATA_FILES);
   const activeSection = DASHBOARD_SECTIONS.find((section) => section.id === activeSectionId);
   const activeReport = OSA_STATS_REPORTS.find((report) => report.id === activeReportId);
