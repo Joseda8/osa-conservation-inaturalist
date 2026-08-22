@@ -56,13 +56,26 @@ export function getCsvValue(csvContent, valueColumn) {
   return Number.isFinite(value) ? value : 0;
 }
 
-export function getGroupedBarChartData(csvContent, categoryColumn, seriesColumn, valueColumn, categoryLabels = {}, seriesLabels = {}) {
+export function getOptionalCsvValue(csvContent, valueColumn) {
+  const [headerRow, firstDataRow] = parseCsv(csvContent);
+  const valueColumnIndex = headerRow?.indexOf(valueColumn) ?? -1;
+  if (!firstDataRow || valueColumnIndex === -1) {
+    return null;
+  }
+  const value = Number(firstDataRow[valueColumnIndex]);
+  return Number.isFinite(value) ? value : null;
+}
+
+export function getGroupedBarChartData(csvContent, categoryColumn, seriesColumn, valueColumn, annotationColumn, totalColumn, categoryLabels = {}, seriesLabels = {}) {
   const [headerRow, ...dataRows] = parseCsv(csvContent);
   const categoryColumnIndex = headerRow.indexOf(categoryColumn);
   const seriesColumnIndex = headerRow.indexOf(seriesColumn);
   const valueColumnIndex = headerRow.indexOf(valueColumn);
+  const annotationColumnIndex = headerRow.indexOf(annotationColumn);
+  const totalColumnIndex = headerRow.indexOf(totalColumn);
   const valuesByCategoryAndSeries = new Map();
   const seriesKeys = [];
+  const totalsBySeries = new Map();
 
   dataRows.forEach((dataRow) => {
     const category = dataRow[categoryColumnIndex];
@@ -70,15 +83,18 @@ export function getGroupedBarChartData(csvContent, categoryColumn, seriesColumn,
     if (!valuesByCategoryAndSeries.has(category)) {
       valuesByCategoryAndSeries.set(category, new Map());
     }
-    valuesByCategoryAndSeries.get(category).set(series, Number(dataRow[valueColumnIndex]) || 0);
+    valuesByCategoryAndSeries.get(category).set(series, { annotation: annotationColumnIndex === -1 ? null : Number(dataRow[annotationColumnIndex]) || 0, value: Number(dataRow[valueColumnIndex]) || 0 });
+    if (!totalsBySeries.has(series)) {
+      totalsBySeries.set(series, totalColumnIndex === -1 ? null : Number(dataRow[totalColumnIndex]) || 0);
+    }
     if (!seriesKeys.includes(series)) {
       seriesKeys.push(series);
     }
   });
 
   return {
-    categories: [...valuesByCategoryAndSeries].map(([category, valuesBySeries]) => ({ label: categoryLabels[category] ?? category, values: seriesKeys.map((series) => valuesBySeries.get(series) ?? 0) })),
-    series: seriesKeys.map((series, seriesIndex) => ({ color: `var(--bar-color-${seriesIndex + 1})`, label: seriesLabels[series] ?? series })),
+    categories: [...valuesByCategoryAndSeries].map(([category, valuesBySeries]) => ({ bars: seriesKeys.map((series) => valuesBySeries.get(series) ?? { annotation: null, value: 0 }), label: categoryLabels[category] ?? category })),
+    series: seriesKeys.map((series, seriesIndex) => ({ color: `var(--bar-color-${seriesIndex + 1})`, label: seriesLabels[series] ?? series, total: totalsBySeries.get(series) })),
   };
 }
 
