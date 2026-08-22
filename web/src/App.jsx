@@ -59,6 +59,19 @@ function parseCsv(csvContent) {
   return rows;
 }
 
+function DownloadCsvButton({ csvContent, fileName }) {
+  function downloadCsv() {
+    const downloadUrl = URL.createObjectURL(new Blob([csvContent], { type: "text/csv;charset=utf-8" }));
+    const downloadLink = document.createElement("a");
+    downloadLink.href = downloadUrl;
+    downloadLink.download = fileName;
+    downloadLink.click();
+    URL.revokeObjectURL(downloadUrl);
+  }
+
+  return <button className="download-button" onClick={downloadCsv} type="button">Download CSV</button>;
+}
+
 function CsvTable({ csvContent }) {
   const [headerRow, ...dataRows] = parseCsv(csvContent);
   if (!headerRow) {
@@ -81,6 +94,52 @@ function CsvTable({ csvContent }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function PieChart({ csvContent }) {
+  const [headerRow, ...dataRows] = parseCsv(csvContent);
+  const [hoveredSliceIndex, setHoveredSliceIndex] = useState(null);
+  const projectAliasIndex = headerRow.indexOf("project_alias");
+  const observationCountIndex = headerRow.indexOf("observation_count");
+  const slices = dataRows.map((dataRow, rowIndex) => ({ count: Number(dataRow[observationCountIndex]), label: dataRow[projectAliasIndex].toUpperCase(), rowIndex }));
+  const totalObservationCount = slices.reduce((total, slice) => total + slice.count, 0);
+  const activeSlice = hoveredSliceIndex === null ? null : slices[hoveredSliceIndex];
+  let startAngle = -90;
+
+  if (totalObservationCount === 0) {
+    return <p className="empty-state">This report has no observations.</p>;
+  }
+
+  function getPoint(angle) {
+    const radians = (angle * Math.PI) / 180;
+    return { x: 50 + 40 * Math.cos(radians), y: 50 + 40 * Math.sin(radians) };
+  }
+
+  return (
+    <div className="pie-chart-layout">
+      <div className="pie-chart" role="img" aria-label="Pie chart of observations per project">
+        <svg viewBox="0 0 100 100">
+          {slices.map((slice, sliceIndex) => {
+            const endAngle = startAngle + (slice.count / totalObservationCount) * 360;
+            const startPoint = getPoint(startAngle);
+            const endPoint = getPoint(endAngle);
+            const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
+            const path = `M 50 50 L ${startPoint.x} ${startPoint.y} A 40 40 0 ${largeArcFlag} 1 ${endPoint.x} ${endPoint.y} Z`;
+            startAngle = endAngle;
+            return <path aria-label={`${slice.label}: ${slice.count.toLocaleString()} observations`} className={sliceIndex === hoveredSliceIndex ? "pie-slice active" : "pie-slice"} d={path} fill={`var(--pie-color-${sliceIndex + 1})`} key={slice.label} onBlur={() => setHoveredSliceIndex(null)} onFocus={() => setHoveredSliceIndex(sliceIndex)} onMouseEnter={() => setHoveredSliceIndex(sliceIndex)} onMouseLeave={() => setHoveredSliceIndex(null)} tabIndex="0" />;
+          })}
+        </svg>
+        <div className="pie-chart-total"><strong>{totalObservationCount.toLocaleString()}</strong><span>observations</span></div>
+      </div>
+      <div className="pie-chart-details">
+        <p className="chart-hint">Hover or focus a slice for its exact count.</p>
+        {activeSlice && <div className="chart-tooltip"><strong>{activeSlice.label}</strong><span>{activeSlice.count.toLocaleString()} observations</span><span>{((activeSlice.count / totalObservationCount) * 100).toFixed(1)}%</span></div>}
+        <ul className="chart-legend">
+          {slices.map((slice, sliceIndex) => <li key={slice.label}><span className="legend-swatch" style={{ backgroundColor: `var(--pie-color-${sliceIndex + 1})` }} /><span>{slice.label}</span><strong>{((slice.count / totalObservationCount) * 100).toFixed(1)}%</strong></li>)}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -133,8 +192,8 @@ export default function App() {
                 </button>
               ))}
             </nav>
-            <h3>{activeReport.label}</h3>
-            <CsvTable csvContent={reportContents[activeReport.id]} />
+            <div className="report-heading"><h3>{activeReport.label}</h3><DownloadCsvButton csvContent={reportContents[activeReport.id]} fileName={activeReport.fileName} /></div>
+            {activeReport.id === "observation-counts" ? <PieChart csvContent={reportContents[activeReport.id]} /> : <CsvTable csvContent={reportContents[activeReport.id]} />}
           </>
         )}
       </main>
