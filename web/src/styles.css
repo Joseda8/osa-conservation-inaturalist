@@ -186,25 +186,19 @@ button {
   transform: scale(1.035);
 }
 
-.pie-chart-total {
-  align-items: center;
-  display: flex;
-  flex-direction: column;
-  inset: 0;
-  justify-content: center;
-  pointer-events: none;
-  position: absolute;
-}
-
-.pie-chart-total strong {
-  font-size: clamp(1.5rem, 4vw, 2.5rem);
-}
-
-.pie-chart-total span,
 .chart-hint,
-.chart-tooltip span {
+.chart-tooltip span,
+.chart-total span {
   color: #5b6d64;
   font-size: 0.875rem;
+}
+
+.chart-total {
+  border-top: 1px solid #dce5de;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding-top: 1rem;
 }
 
 .chart-hint {
