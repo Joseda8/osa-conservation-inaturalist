@@ -55,3 +55,29 @@ export function getCsvValue(csvContent, valueColumn) {
   const value = Number(firstDataRow[headerRow.indexOf(valueColumn)]);
   return Number.isFinite(value) ? value : 0;
 }
+
+export function getGroupedBarChartData(csvContent, categoryColumn, seriesColumn, valueColumn, categoryLabels = {}, seriesLabels = {}) {
+  const [headerRow, ...dataRows] = parseCsv(csvContent);
+  const categoryColumnIndex = headerRow.indexOf(categoryColumn);
+  const seriesColumnIndex = headerRow.indexOf(seriesColumn);
+  const valueColumnIndex = headerRow.indexOf(valueColumn);
+  const valuesByCategoryAndSeries = new Map();
+  const seriesKeys = [];
+
+  dataRows.forEach((dataRow) => {
+    const category = dataRow[categoryColumnIndex];
+    const series = dataRow[seriesColumnIndex];
+    if (!valuesByCategoryAndSeries.has(category)) {
+      valuesByCategoryAndSeries.set(category, new Map());
+    }
+    valuesByCategoryAndSeries.get(category).set(series, Number(dataRow[valueColumnIndex]) || 0);
+    if (!seriesKeys.includes(series)) {
+      seriesKeys.push(series);
+    }
+  });
+
+  return {
+    categories: [...valuesByCategoryAndSeries].map(([category, valuesBySeries]) => ({ label: categoryLabels[category] ?? category, values: seriesKeys.map((series) => valuesBySeries.get(series) ?? 0) })),
+    series: seriesKeys.map((series, seriesIndex) => ({ color: `var(--bar-color-${seriesIndex + 1})`, label: seriesLabels[series] ?? series })),
+  };
+}

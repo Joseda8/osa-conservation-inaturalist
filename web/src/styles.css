@@ -1,4 +1,6 @@
 :root {
+  --bar-color-1: #2d6e55;
+  --bar-color-2: #8fd3a8;
   --pie-color-1: #2d6e55;
   --pie-color-2: #8fd3a8;
   color: #1d2a25;
@@ -283,6 +285,76 @@ button {
   width: 0.75rem;
 }
 
+.grouped-bar-chart {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #dce5de;
+  border-radius: 0.75rem;
+  box-shadow: 0 0.5rem 1.5rem rgb(22 70 55 / 7%);
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 18rem);
+  padding: 1.5rem;
+}
+
+.grouped-bar-chart-plot {
+  align-items: end;
+  background: linear-gradient(180deg, #f7fbf7, #edf7ef);
+  border-radius: 0.6rem;
+  display: grid;
+  gap: clamp(1rem, 5vw, 3rem);
+  grid-auto-columns: minmax(7rem, 1fr);
+  grid-auto-flow: column;
+  min-height: 20rem;
+  overflow-x: auto;
+  padding: 1.25rem 1.5rem 1rem;
+}
+
+.bar-group {
+  align-items: center;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-rows: 1fr auto;
+  height: 100%;
+}
+
+.bar-group-bars {
+  align-items: end;
+  display: flex;
+  gap: 0.5rem;
+  height: 100%;
+  justify-content: center;
+}
+
+.bar {
+  background: var(--bar-color);
+  border: 0;
+  border-radius: 0.5rem 0.5rem 0.15rem 0.15rem;
+  cursor: pointer;
+  height: var(--bar-height);
+  min-height: 0.25rem;
+  transition: filter 160ms ease, transform 160ms ease;
+  width: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.bar:hover,
+.bar:focus-visible,
+.bar.active {
+  filter: brightness(1.1) saturate(1.2);
+  outline: 3px solid #b9e4c9;
+  outline-offset: 2px;
+  transform: translateY(-0.25rem);
+}
+
+.bar-group-label {
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.grouped-bar-chart-details {
+  min-height: 12rem;
+}
+
 .table-container {
   background: #fff;
   border: 1px solid #dce5de;
@@ -352,6 +424,10 @@ tbody tr:last-child td {
   }
 
   .pie-chart-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .grouped-bar-chart {
     grid-template-columns: 1fr;
   }
 }
