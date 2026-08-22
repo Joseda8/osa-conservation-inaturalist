@@ -61,6 +61,31 @@ button {
   gap: 0.5rem;
 }
 
+.tab-search {
+  background: #fff;
+  border: 1px solid #cddbd0;
+  border-radius: 0.35rem;
+  font: inherit;
+  margin: 0 0 1rem;
+  padding: 0.5rem;
+}
+
+.tab-search:focus-visible {
+  outline: 2px solid #93d6a8;
+  outline-offset: 2px;
+}
+
+.sidebar-search-results {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.tab-search-empty {
+  color: #d5e4d8;
+  font-size: 0.875rem;
+  margin: 0.25rem 0;
+}
+
 .navigation-item {
   background: transparent;
   border: 0;
@@ -99,30 +124,6 @@ button {
   gap: 0.25rem;
   margin: 0.75rem 0 0 0.9rem;
   padding-left: 0.75rem;
-}
-
-.sidebar-report-navigation nav {
-  display: grid;
-  gap: 0.25rem;
-}
-
-.report-search {
-  background: #fff;
-  border: 1px solid #cddbd0;
-  border-radius: 0.35rem;
-  font: inherit;
-  padding: 0.5rem;
-}
-
-.report-search:focus-visible {
-  outline: 2px solid #93d6a8;
-  outline-offset: 2px;
-}
-
-.report-search-empty {
-  color: #d5e4d8;
-  font-size: 0.875rem;
-  margin: 0.25rem 0;
 }
 
 .visually-hidden {
@@ -343,10 +344,6 @@ tbody tr:last-child td {
   }
 
   .sidebar-navigation {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .sidebar-report-navigation nav {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
