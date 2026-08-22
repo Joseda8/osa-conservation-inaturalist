@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function PieChart({ ariaLabel, slices, totalLabel, valueLabel }) {
+export default function PieChart({ ariaLabel, slices, summaryItems = [], totalLabel, valueLabel }) {
   const [hoveredSliceIndex, setHoveredSliceIndex] = useState(null);
   const totalValue = slices.reduce((total, slice) => total + slice.count, 0);
   const activeSlice = hoveredSliceIndex === null ? null : slices[hoveredSliceIndex];
@@ -37,6 +37,7 @@ export default function PieChart({ ariaLabel, slices, totalLabel, valueLabel }) 
           {slices.map((slice, sliceIndex) => <li key={slice.label}><span className="legend-swatch" style={{ backgroundColor: `var(--pie-color-${sliceIndex + 1})` }} /><span>{slice.label}</span><strong>{((slice.count / totalValue) * 100).toFixed(1)}%</strong></li>)}
         </ul>
         <div className="chart-total"><span>{totalLabel}</span><strong>{totalValue.toLocaleString()}</strong></div>
+        {summaryItems.map((summaryItem) => <div className="chart-total" key={summaryItem.label}><span>{summaryItem.label}</span><strong>{summaryItem.value.toLocaleString()}</strong></div>)}
       </div>
     </div>
   );

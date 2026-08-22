@@ -37,9 +37,21 @@ export function parseCsv(csvContent) {
   return rows;
 }
 
-export function getPieChartSlices(csvContent, categoryColumn, valueColumn) {
+export function getPieChartSlices(csvContent, categoryColumn, valueColumn, categoryLabels = {}) {
   const [headerRow, ...dataRows] = parseCsv(csvContent);
   const categoryColumnIndex = headerRow.indexOf(categoryColumn);
   const valueColumnIndex = headerRow.indexOf(valueColumn);
-  return dataRows.map((dataRow) => ({ count: Number(dataRow[valueColumnIndex]), label: dataRow[categoryColumnIndex] }));
+  return dataRows.map((dataRow) => {
+    const category = dataRow[categoryColumnIndex];
+    return { count: Number(dataRow[valueColumnIndex]), label: categoryLabels[category] ?? category };
+  });
+}
+
+export function getCsvValue(csvContent, valueColumn) {
+  const [headerRow, firstDataRow] = parseCsv(csvContent);
+  if (!headerRow || !firstDataRow) {
+    return 0;
+  }
+  const value = Number(firstDataRow[headerRow.indexOf(valueColumn)]);
+  return Number.isFinite(value) ? value : 0;
 }
