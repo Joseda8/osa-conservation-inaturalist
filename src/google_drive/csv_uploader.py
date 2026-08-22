@@ -10,21 +10,21 @@ import os
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 
-from .constants import CSV_MIME_TYPE, DEFAULT_OBSERVATIONS_CSV_FILE_NAME, GOOGLE_DRIVE_API_NAME, GOOGLE_DRIVE_API_VERSION, GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME_ENV_VAR, GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR, MAXIMUM_MATCHING_FILE_COUNT
+from .constants import CSV_MIME_TYPE, GOOGLE_DRIVE_API_NAME, GOOGLE_DRIVE_API_VERSION, GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR, MAXIMUM_MATCHING_FILE_COUNT
 from .oauth_credentials import GoogleDriveOAuthCredentials
 
 
 class GoogleDriveCsvUploader:
     """Uploads a CSV to the configured Google Drive folder."""
 
-    def upload_observations_csv(self, csv_content: str) -> str:
-        """Create or replace the configured observations CSV file.
+    def upload_csv(self, file_name: str, csv_content: str) -> str:
+        """Create or replace a CSV file in the configured Google Drive folder.
 
         @param csv_content UTF-8 CSV content to upload.
+        @param file_name Destination CSV filename.
         @return Google Drive file ID.
         """
         folder_id = self._get_required_environment_variable(GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR)
-        file_name = os.environ.get(GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME_ENV_VAR, DEFAULT_OBSERVATIONS_CSV_FILE_NAME)
         credentials = GoogleDriveOAuthCredentials().get()
         drive_service = build(GOOGLE_DRIVE_API_NAME, GOOGLE_DRIVE_API_VERSION, credentials=credentials)
         existing_file_id = self._find_existing_file_id(drive_service, folder_id, file_name)

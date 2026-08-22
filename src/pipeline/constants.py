@@ -31,11 +31,16 @@ HISTORICAL_LOAD_PIPELINE_NAME = "historical-load"
 # Steps that download, load, reconcile, and enrich a data update.
 DATA_UPDATE_PIPELINE_STEP_NAMES = ("download-raw-data", "download-trends", "load-raw-data-to-db", "reconcile-project-observations", "enrich-taxonomy")
 
-# Initial proof-of-concept query exported to Google Drive as CSV.
-OBSERVATIONS_CSV_EXPORT_QUERY = "SELECT * FROM observations LIMIT 5;"
+# CSV reports generated from the ABS and OBS observation data.
+ABS_VS_OBS_REPORTS = (
+    ("abs-vs-obs-observation-counts.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_observation_counts.sql"),
+    ("abs-vs-obs-observations-by-day.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_observations_by_day.sql"),
+    ("abs-vs-obs-duplicate-observations.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_duplicate_observations.sql"),
+    ("abs-vs-obs-quality-grades.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_quality_grades.sql"),
+)
 
-# Generated CSV path consumed by the GitHub Pages React build.
-GITHUB_PAGES_OBSERVATIONS_CSV_PATH = Path("web") / "public" / "data" / "observations.csv"
+# Folder containing generated CSV reports consumed by the GitHub Pages React build.
+GITHUB_PAGES_DATA_DIRECTORY = Path("web") / "public" / "data"
 
 # Whether the command-line interface lists steps instead of running the pipeline.
 DEFAULT_LIST_STEPS = False

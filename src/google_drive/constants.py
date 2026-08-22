@@ -31,12 +31,6 @@ GOOGLE_DRIVE_OAUTH_LOCAL_SERVER_PORT = 0
 # File permissions that restrict locally saved OAuth credentials to their owner.
 PRIVATE_CREDENTIAL_FILE_MODE = 0o600
 
-# Optional environment variable overriding the uploaded observations CSV filename.
-GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME_ENV_VAR = "GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME"
-
-# Default filename for the observations CSV uploaded to Google Drive.
-DEFAULT_OBSERVATIONS_CSV_FILE_NAME = "observations.csv"
-
 # Google Drive OAuth scope required to read, create, and replace generated files.
 GOOGLE_DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"
 

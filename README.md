@@ -93,7 +93,7 @@ Run the initial database analysis and upload its CSV export to Google Drive:
 PYTHONPATH=src python3 src/main.py --steps analyze-and-upload-to-drive
 ```
 
-The first run opens a browser for the selected Google user to authorize the pipeline. Its refresh token is saved at `.secrets/google-oauth-token.json`. The step runs `SELECT * FROM observations LIMIT 5;`, writes the result to an in-memory CSV with headers, and creates or replaces `observations.csv` in the configured Google Drive folder. Set `GOOGLE_DRIVE_UPLOAD_FOLDER_ID` in the ignored `.env` file to the ID of OSA's `processed-data` folder. Never commit either OAuth JSON file. Set `GOOGLE_DRIVE_OAUTH_CLIENT_JSON_PATH` or `GOOGLE_DRIVE_OAUTH_TOKEN_PATH` to use different local paths; set `GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME` to override the file name.
+The first run opens a browser for the selected Google user to authorize the pipeline. Its refresh token is saved at `.secrets/google-oauth-token.json`. The step generates and uploads ABS-vs-OBS CSV reports for total observations, observations by day, duplicate observation IDs, and quality grades. Set `GOOGLE_DRIVE_UPLOAD_FOLDER_ID` in the ignored `.env` file to the ID of OSA's `processed-data` folder. Never commit either OAuth JSON file. Set `GOOGLE_DRIVE_OAUTH_CLIENT_JSON_PATH` or `GOOGLE_DRIVE_OAUTH_TOKEN_PATH` to use different local paths.
 
 ## GitHub Actions
 

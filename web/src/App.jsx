@@ -13,6 +13,13 @@ const DASHBOARD_SECTIONS = [
   },
 ];
 
+const OSA_STATS_REPORTS = [
+  { fileName: "abs-vs-obs-observation-counts.csv", id: "observation-counts", label: "Observations per project" },
+  { fileName: "abs-vs-obs-observations-by-day.csv", id: "observations-by-day", label: "Observations per day" },
+  { fileName: "abs-vs-obs-duplicate-observations.csv", id: "duplicate-observations", label: "Duplicate observations" },
+  { fileName: "abs-vs-obs-quality-grades.csv", id: "quality-grades", label: "Quality grades" },
+];
+
 function parseCsv(csvContent) {
   const rows = [];
   let cell = "";
@@ -80,19 +87,20 @@ function CsvTable({ csvContent }) {
 
 export default function App() {
   const [activeSectionId, setActiveSectionId] = useState(DASHBOARD_SECTIONS[0].id);
-  const [csvContent, setCsvContent] = useState(null);
+  const [activeReportId, setActiveReportId] = useState(OSA_STATS_REPORTS[0].id);
+  const [reportContents, setReportContents] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const activeSection = DASHBOARD_SECTIONS.find((section) => section.id === activeSectionId);
+  const activeReport = OSA_STATS_REPORTS.find((report) => report.id === activeReportId);
 
   useEffect(() => {
-    fetch(`${import.meta.env.BASE_URL}data/observations.csv`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("The observations CSV could not be loaded.");
-        }
-        return response.text();
-      })
-      .then(setCsvContent)
+    Promise.all(OSA_STATS_REPORTS.map((report) => fetch(`${import.meta.env.BASE_URL}data/${report.fileName}`).then((response) => {
+      if (!response.ok) {
+        throw new Error(`The ${report.label.toLowerCase()} report could not be loaded.`);
+      }
+      return response.text();
+    })))
+      .then((csvContents) => setReportContents(Object.fromEntries(OSA_STATS_REPORTS.map((report, reportIndex) => [report.id, csvContents[reportIndex]]))))
       .catch((error) => setErrorMessage(error.message));
   }, []);
 
@@ -114,8 +122,21 @@ export default function App() {
         <h2>{activeSection.label}</h2>
         <p className="section-description">{activeSection.description}</p>
         {errorMessage && <p className="error-state">{errorMessage} Run the Refresh GitHub Pages workflow to generate it.</p>}
-        {csvContent === null && errorMessage === null && <p className="empty-state">Loading observations…</p>}
-        {csvContent !== null && <CsvTable csvContent={csvContent} />}
+        {reportContents === null && errorMessage === null && <p className="empty-state">Loading reports…</p>}
+        {activeSectionId === "national-trends" && <p className="empty-state">National trends will be added next.</p>}
+        {activeSectionId === "osa-stats" && reportContents !== null && (
+          <>
+            <nav aria-label="OSA statistics reports" className="report-navigation">
+              {OSA_STATS_REPORTS.map((report) => (
+                <button aria-current={report.id === activeReportId ? "page" : undefined} className={report.id === activeReportId ? "report-navigation-item active" : "report-navigation-item"} key={report.id} onClick={() => setActiveReportId(report.id)} type="button">
+                  {report.label}
+                </button>
+              ))}
+            </nav>
+            <h3>{activeReport.label}</h3>
+            <CsvTable csvContent={reportContents[activeReport.id]} />
+          </>
+        )}
       </main>
     </div>
   );

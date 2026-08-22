@@ -5,25 +5,23 @@
 """
 
 import io
-import os
-
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 
-from .constants import DEFAULT_OBSERVATIONS_CSV_FILE_NAME, GOOGLE_DRIVE_API_NAME, GOOGLE_DRIVE_API_VERSION, GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME_ENV_VAR, GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR, MAXIMUM_MATCHING_FILE_COUNT
+from .constants import GOOGLE_DRIVE_API_NAME, GOOGLE_DRIVE_API_VERSION, GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR, MAXIMUM_MATCHING_FILE_COUNT
 from .oauth_credentials import GoogleDriveOAuthCredentials
 
 
 class GoogleDriveCsvReader:
     """Reads a CSV from the configured Google Drive folder."""
 
-    def read_observations_csv(self) -> str:
-        """Read the configured observations CSV file.
+    def read_csv(self, file_name: str) -> str:
+        """Read a CSV file from the configured Google Drive folder.
 
+        @param file_name Exact CSV filename.
         @return UTF-8 CSV content.
         """
         folder_id = self._get_required_environment_variable(GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR)
-        file_name = os.environ.get(GOOGLE_DRIVE_OBSERVATIONS_CSV_FILE_NAME_ENV_VAR, DEFAULT_OBSERVATIONS_CSV_FILE_NAME)
         credentials = GoogleDriveOAuthCredentials().get()
         drive_service = build(GOOGLE_DRIVE_API_NAME, GOOGLE_DRIVE_API_VERSION, credentials=credentials)
         file_id = self._find_file_id(drive_service, folder_id, file_name)

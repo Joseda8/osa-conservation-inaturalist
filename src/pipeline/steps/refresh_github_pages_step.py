@@ -5,7 +5,7 @@
 """
 
 from google_drive import GoogleDriveCsvReader
-from pipeline.constants import GITHUB_PAGES_OBSERVATIONS_CSV_PATH
+from pipeline.constants import ABS_VS_OBS_REPORTS, GITHUB_PAGES_DATA_DIRECTORY
 from pipeline.pipeline_context import PipelineContext
 from utils import LOGGER
 
@@ -16,11 +16,13 @@ class RefreshGitHubPagesStep:
     name = "refresh-github-pages"
 
     def run(self, pipeline_context: PipelineContext):
-        """Read the observations CSV and save it for the React build.
+        """Read dashboard CSV reports and save them for the React build.
 
         @param pipeline_context Shared pipeline state.
         """
-        csv_content = GoogleDriveCsvReader().read_observations_csv()
-        GITHUB_PAGES_OBSERVATIONS_CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
-        GITHUB_PAGES_OBSERVATIONS_CSV_PATH.write_text(csv_content, encoding="utf-8")
-        LOGGER.info("Saved Google Drive CSV for GitHub Pages: %s", GITHUB_PAGES_OBSERVATIONS_CSV_PATH)
+        GITHUB_PAGES_DATA_DIRECTORY.mkdir(parents=True, exist_ok=True)
+        google_drive_reader = GoogleDriveCsvReader()
+        for file_name, _ in ABS_VS_OBS_REPORTS:
+            output_path = GITHUB_PAGES_DATA_DIRECTORY / file_name
+            output_path.write_text(google_drive_reader.read_csv(file_name), encoding="utf-8")
+            LOGGER.info("Saved Google Drive report for GitHub Pages: %s", output_path)
