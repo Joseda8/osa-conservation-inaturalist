@@ -39,6 +39,12 @@ ABS_VS_OBS_REPORTS = (
     ("abs-vs-obs-quality-grades.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_quality_grades.sql"),
 )
 
+# Root folder for locally generated dashboard CSV reports.
+PROCESSED_DATA_DIRECTORY = Path("data") / "processed-data"
+
+# Date format used for dated local dashboard report folders.
+PROCESSED_DATA_DATE_FORMAT = "%Y%m%d"
+
 # Folder containing generated CSV reports consumed by the GitHub Pages React build.
 GITHUB_PAGES_DATA_DIRECTORY = Path("web") / "public" / "data"
 
