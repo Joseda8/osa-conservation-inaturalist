@@ -25,3 +25,4 @@ Read the `README.md` to catch up with the project. In general keep changes simpl
 - Do not keep dead code or compatibility wrappers that are no longer used.
 - Keep no more than one class per file. When adding a class, create a dedicated module for it.
 - Keep the complete PostgreSQL 1.0 schema in `db/migrations/0001_initial_schema.sql`. Do not create additional migrations: update this single script and rebuild the local database when schema changes are needed. Do not create or change tables, indexes, or constraints with ad hoc runtime DDL.
+- Store every PostgreSQL statement executed by Python in a named SQL file under `db/queries/`; Python must read and execute the file instead of embedding SQL text. Keep `db/queries/legacy/` unchanged until the production system is ready.

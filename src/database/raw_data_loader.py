@@ -16,6 +16,8 @@ from psycopg import Connection
 from psycopg.types.json import Jsonb
 from utils import LOGGER
 
+from .constants import UPSERT_OBSERVATION_PHOTO_QUERY_PATH, UPSERT_OBSERVATION_QUERY_PATH, UPSERT_OBSERVER_QUERY_PATH, UPSERT_PROJECT_QUERY_PATH
+from .query_loader import load_sql_query
 from .taxon_repository import TaxonRepository
 
 
@@ -136,13 +138,7 @@ class RawDataLoader:
         @param load_counts Processed row counts by table.
         """
         self._database_connection.execute(
-            """
-            INSERT INTO projects (alias, slug, display_name)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (alias) DO UPDATE SET
-                slug = EXCLUDED.slug,
-                display_name = EXCLUDED.display_name
-            """,
+            load_sql_query(UPSERT_PROJECT_QUERY_PATH),
             (project_config.alias, project_config.slug, project_config.slug),
         )
         load_counts["projects"] += 1
@@ -209,25 +205,7 @@ class RawDataLoader:
         @param load_counts Processed row counts by table.
         """
         self._database_connection.execute(
-            """
-            INSERT INTO observers (
-                observer_id,
-                login,
-                name,
-                observations_count,
-                species_count,
-                loaded_from,
-                loaded_at
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, now())
-            ON CONFLICT (observer_id) DO UPDATE SET
-                login = EXCLUDED.login,
-                name = EXCLUDED.name,
-                observations_count = EXCLUDED.observations_count,
-                species_count = EXCLUDED.species_count,
-                loaded_from = EXCLUDED.loaded_from,
-                loaded_at = now()
-            """,
+            load_sql_query(UPSERT_OBSERVER_QUERY_PATH),
             (
                 observer_json["id"],
                 observer_json.get("login"),
@@ -261,72 +239,7 @@ class RawDataLoader:
         """
         latitude, longitude = self._get_latitude_longitude(observation_json)
         self._database_connection.execute(
-            """
-            INSERT INTO observations (
-                project_alias,
-                download_date,
-                observation_id,
-                quality_grade,
-                species_guess,
-                observed_on,
-                created_at,
-                updated_at,
-                longitude,
-                latitude,
-                location,
-                place_guess,
-                positional_accuracy,
-                public_positional_accuracy,
-                geoprivacy,
-                taxon_geoprivacy,
-                obscured,
-                mappable,
-                captive,
-                project_ids,
-                project_ids_with_curator_id,
-                project_ids_without_curator_id,
-                identifications_count,
-                num_identification_agreements,
-                num_identification_disagreements,
-                taxon_id,
-                observer_id,
-                loaded_from,
-                loaded_at
-            )
-            VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, %s, %s, %s, now()
-            )
-            ON CONFLICT (project_alias, observation_id) DO UPDATE SET
-                download_date = EXCLUDED.download_date,
-                quality_grade = EXCLUDED.quality_grade,
-                species_guess = EXCLUDED.species_guess,
-                observed_on = EXCLUDED.observed_on,
-                created_at = EXCLUDED.created_at,
-                updated_at = EXCLUDED.updated_at,
-                longitude = EXCLUDED.longitude,
-                latitude = EXCLUDED.latitude,
-                location = EXCLUDED.location,
-                place_guess = EXCLUDED.place_guess,
-                positional_accuracy = EXCLUDED.positional_accuracy,
-                public_positional_accuracy = EXCLUDED.public_positional_accuracy,
-                geoprivacy = EXCLUDED.geoprivacy,
-                taxon_geoprivacy = EXCLUDED.taxon_geoprivacy,
-                obscured = EXCLUDED.obscured,
-                mappable = EXCLUDED.mappable,
-                captive = EXCLUDED.captive,
-                project_ids = EXCLUDED.project_ids,
-                project_ids_with_curator_id = EXCLUDED.project_ids_with_curator_id,
-                project_ids_without_curator_id = EXCLUDED.project_ids_without_curator_id,
-                identifications_count = EXCLUDED.identifications_count,
-                num_identification_agreements = EXCLUDED.num_identification_agreements,
-                num_identification_disagreements = EXCLUDED.num_identification_disagreements,
-                taxon_id = EXCLUDED.taxon_id,
-                observer_id = EXCLUDED.observer_id,
-                loaded_from = EXCLUDED.loaded_from,
-                loaded_at = now()
-            """,
+            load_sql_query(UPSERT_OBSERVATION_QUERY_PATH),
             (
                 project_alias,
                 download_date,
@@ -385,33 +298,7 @@ class RawDataLoader:
 
             original_dimensions = photo_json.get("original_dimensions") or {}
             self._database_connection.execute(
-                """
-                INSERT INTO observation_photos (
-                    project_alias,
-                    download_date,
-                    observation_id,
-                    photo_id,
-                    url,
-                    license_code,
-                    attribution,
-                    hidden,
-                    width,
-                    height,
-                    loaded_from,
-                    loaded_at
-                )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
-                ON CONFLICT (project_alias, observation_id, photo_id) DO UPDATE SET
-                    download_date = EXCLUDED.download_date,
-                    url = EXCLUDED.url,
-                    license_code = EXCLUDED.license_code,
-                    attribution = EXCLUDED.attribution,
-                    hidden = EXCLUDED.hidden,
-                    width = EXCLUDED.width,
-                    height = EXCLUDED.height,
-                    loaded_from = EXCLUDED.loaded_from,
-                    loaded_at = now()
-                """,
+                load_sql_query(UPSERT_OBSERVATION_PHOTO_QUERY_PATH),
                 (
                     project_alias,
                     download_date,

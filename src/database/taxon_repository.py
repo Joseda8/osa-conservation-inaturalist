@@ -9,6 +9,8 @@ from typing import Any
 from psycopg import Connection
 from psycopg.types.json import Jsonb
 
+from .constants import SELECT_ALL_TAXON_IDS_QUERY_PATH, SELECT_MISSING_LINEAGE_TAXON_IDS_QUERY_PATH, UPSERT_TAXON_QUERY_PATH
+from .query_loader import load_sql_query
 
 class TaxonRepository:
     """Stores and queries iNaturalist taxa.
@@ -28,13 +30,7 @@ class TaxonRepository:
 
         @return Sorted taxon IDs.
         """
-        taxon_rows = self._database_connection.execute(
-            """
-            SELECT taxon_id
-            FROM taxa
-            ORDER BY taxon_id
-            """
-        ).fetchall()
+        taxon_rows = self._database_connection.execute(load_sql_query(SELECT_ALL_TAXON_IDS_QUERY_PATH)).fetchall()
         return [int(taxon_row[0]) for taxon_row in taxon_rows]
 
     def get_missing_lineage_taxon_ids(self) -> list[int]:
@@ -42,23 +38,7 @@ class TaxonRepository:
 
         @return Sorted missing ancestor taxon IDs.
         """
-        missing_taxon_rows = self._database_connection.execute(
-            """
-            WITH referenced_taxon_ids AS (
-                SELECT DISTINCT ancestor_id.value::BIGINT AS taxon_id
-                FROM taxa AS source_taxa
-                CROSS JOIN LATERAL jsonb_array_elements_text(
-                    COALESCE(source_taxa.ancestor_ids, '[]'::JSONB)
-                ) AS ancestor_id(value)
-            )
-            SELECT referenced_taxon_ids.taxon_id
-            FROM referenced_taxon_ids
-            LEFT JOIN taxa AS stored_taxa
-                ON stored_taxa.taxon_id = referenced_taxon_ids.taxon_id
-            WHERE stored_taxa.taxon_id IS NULL
-            ORDER BY referenced_taxon_ids.taxon_id
-            """
-        ).fetchall()
+        missing_taxon_rows = self._database_connection.execute(load_sql_query(SELECT_MISSING_LINEAGE_TAXON_IDS_QUERY_PATH)).fetchall()
         return [int(missing_taxon_row[0]) for missing_taxon_row in missing_taxon_rows]
 
     def upsert_taxa(self, taxon_json_rows: list[dict[str, Any]], loaded_from: str) -> int:
@@ -70,45 +50,7 @@ class TaxonRepository:
         """
         for taxon_json in taxon_json_rows:
             self._database_connection.execute(
-                """
-                INSERT INTO taxa (
-                    taxon_id,
-                    scientific_name,
-                    common_name,
-                    rank,
-                    rank_level,
-                    parent_id,
-                    ancestor_ids,
-                    iconic_taxon_id,
-                    iconic_taxon_name,
-                    is_active,
-                    native,
-                    introduced,
-                    endemic,
-                    threatened,
-                    extinct,
-                    loaded_from,
-                    loaded_at
-                )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
-                ON CONFLICT (taxon_id) DO UPDATE SET
-                    scientific_name = EXCLUDED.scientific_name,
-                    common_name = EXCLUDED.common_name,
-                    rank = EXCLUDED.rank,
-                    rank_level = EXCLUDED.rank_level,
-                    parent_id = EXCLUDED.parent_id,
-                    ancestor_ids = EXCLUDED.ancestor_ids,
-                    iconic_taxon_id = EXCLUDED.iconic_taxon_id,
-                    iconic_taxon_name = EXCLUDED.iconic_taxon_name,
-                    is_active = EXCLUDED.is_active,
-                    native = EXCLUDED.native,
-                    introduced = EXCLUDED.introduced,
-                    endemic = EXCLUDED.endemic,
-                    threatened = EXCLUDED.threatened,
-                    extinct = EXCLUDED.extinct,
-                    loaded_from = EXCLUDED.loaded_from,
-                    loaded_at = now()
-                """,
+                load_sql_query(UPSERT_TAXON_QUERY_PATH),
                 (
                     taxon_json["id"],
                     taxon_json.get("name"),

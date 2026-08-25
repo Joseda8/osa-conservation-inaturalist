@@ -9,7 +9,7 @@ import io
 from datetime import date
 from pathlib import Path
 
-from database import open_database_connection
+from database import load_sql_query, open_database_connection
 from google_drive import GoogleDriveCsvUploader
 from pipeline.constants import ABS_VS_OBS_REPORTS, PROCESSED_DATA_DATE_FORMAT, PROCESSED_DATA_DIRECTORY
 from pipeline.pipeline_context import PipelineContext
@@ -68,7 +68,7 @@ class AnalyzeAndUploadToDriveStep:
         """
         with open_database_connection() as database_connection:
             with database_connection.cursor() as database_cursor:
-                database_cursor.execute(query_path.read_text())
+                database_cursor.execute(load_sql_query(query_path))
                 csv_buffer = io.StringIO()
                 csv_writer = csv.writer(csv_buffer)
                 csv_writer.writerow([column.name for column in database_cursor.description])

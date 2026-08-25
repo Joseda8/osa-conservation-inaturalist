@@ -1,0 +1,37 @@
+INSERT INTO taxa (
+    taxon_id,
+    scientific_name,
+    common_name,
+    rank,
+    rank_level,
+    parent_id,
+    ancestor_ids,
+    iconic_taxon_id,
+    iconic_taxon_name,
+    is_active,
+    native,
+    introduced,
+    endemic,
+    threatened,
+    extinct,
+    loaded_from,
+    loaded_at
+)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
+ON CONFLICT (taxon_id) DO UPDATE SET
+    scientific_name = EXCLUDED.scientific_name,
+    common_name = EXCLUDED.common_name,
+    rank = EXCLUDED.rank,
+    rank_level = EXCLUDED.rank_level,
+    parent_id = EXCLUDED.parent_id,
+    ancestor_ids = EXCLUDED.ancestor_ids,
+    iconic_taxon_id = EXCLUDED.iconic_taxon_id,
+    iconic_taxon_name = EXCLUDED.iconic_taxon_name,
+    is_active = EXCLUDED.is_active,
+    native = EXCLUDED.native,
+    introduced = EXCLUDED.introduced,
+    endemic = EXCLUDED.endemic,
+    threatened = EXCLUDED.threatened,
+    extinct = EXCLUDED.extinct,
+    loaded_from = EXCLUDED.loaded_from,
+    loaded_at = now();

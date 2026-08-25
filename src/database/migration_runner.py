@@ -9,7 +9,8 @@ from pathlib import Path
 from psycopg import Connection
 from utils import LOGGER
 
-from .constants import MIGRATIONS_DIR
+from .constants import CREATE_SCHEMA_MIGRATIONS_TABLE_QUERY_PATH, INSERT_SCHEMA_MIGRATION_QUERY_PATH, MIGRATIONS_DIR, SELECT_SCHEMA_MIGRATION_VERSIONS_QUERY_PATH
+from .query_loader import load_sql_query
 
 
 class MigrationRunner:
@@ -52,15 +53,7 @@ class MigrationRunner:
 
     def _ensure_schema_migrations_table(self):
         """Create the migration tracking table when needed."""
-        self._database_connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS schema_migrations (
-                version TEXT PRIMARY KEY,
-                file_name TEXT NOT NULL,
-                applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
-            )
-            """
-        )
+        self._database_connection.execute(load_sql_query(CREATE_SCHEMA_MIGRATIONS_TABLE_QUERY_PATH))
         self._database_connection.commit()
 
     def _get_applied_versions(self) -> set[str]:
@@ -68,7 +61,7 @@ class MigrationRunner:
 
         @return Applied migration versions.
         """
-        migration_rows = self._database_connection.execute("SELECT version FROM schema_migrations")
+        migration_rows = self._database_connection.execute(load_sql_query(SELECT_SCHEMA_MIGRATION_VERSIONS_QUERY_PATH))
         applied_versions = {migration_row[0] for migration_row in migration_rows}
         self._database_connection.commit()
         return applied_versions
@@ -94,13 +87,7 @@ class MigrationRunner:
         @param migration_path Migration file path.
         @param migration_version Migration version.
         """
-        migration_sql = migration_path.read_text()
+        migration_sql = load_sql_query(migration_path)
         with self._database_connection.transaction():
             self._database_connection.execute(migration_sql)
-            self._database_connection.execute(
-                """
-                INSERT INTO schema_migrations (version, file_name)
-                VALUES (%s, %s)
-                """,
-                (migration_version, migration_path.name),
-            )
+            self._database_connection.execute(load_sql_query(INSERT_SCHEMA_MIGRATION_QUERY_PATH), (migration_version, migration_path.name))

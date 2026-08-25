@@ -9,6 +9,8 @@ from utils import LOGGER
 
 from inaturalist_client.project_config import ProjectConfig
 
+from .constants import DELETE_ORPHAN_OBSERVERS_QUERY_PATH, DELETE_ORPHAN_TAXA_QUERY_PATH, DELETE_STALE_OBSERVATION_PHOTOS_QUERY_PATH, DELETE_STALE_OBSERVATIONS_QUERY_PATH, SELECT_PROJECT_OBSERVATION_IDS_QUERY_PATH
+from .query_loader import load_sql_query
 
 class ProjectObservationReconciler:
     """Deletes local observations that no longer belong to a project.
@@ -29,14 +31,7 @@ class ProjectObservationReconciler:
         @param project_config Project to inspect.
         @return Local observation IDs stored in PostgreSQL.
         """
-        local_observation_rows = self._database_connection.execute(
-            """
-            SELECT observation_id
-            FROM observations
-            WHERE project_alias = %s
-            """,
-            (project_config.alias,),
-        ).fetchall()
+        local_observation_rows = self._database_connection.execute(load_sql_query(SELECT_PROJECT_OBSERVATION_IDS_QUERY_PATH), (project_config.alias,)).fetchall()
         LOGGER.info("Loaded %s local observation IDs for project %s from PostgreSQL", len(local_observation_rows), project_config.alias)
         return {int(local_observation_row[0]) for local_observation_row in local_observation_rows}
 
@@ -82,15 +77,7 @@ class ProjectObservationReconciler:
         @return Number of deleted observations.
         """
         self._delete_stale_observation_photos(project_alias, stale_observation_ids)
-        deleted_observation_rows = self._database_connection.execute(
-            """
-            DELETE FROM observations AS observation_rows
-            WHERE observation_rows.project_alias = %s
-                AND observation_rows.observation_id = ANY(%s)
-            RETURNING observation_rows.observation_id
-            """,
-            (project_alias, stale_observation_ids),
-        ).fetchall()
+        deleted_observation_rows = self._database_connection.execute(load_sql_query(DELETE_STALE_OBSERVATIONS_QUERY_PATH), (project_alias, stale_observation_ids)).fetchall()
         return len(deleted_observation_rows)
 
     def _delete_stale_observation_photos(
@@ -103,47 +90,12 @@ class ProjectObservationReconciler:
         @param project_alias Local project alias.
         @param stale_observation_ids Stale local observation IDs.
         """
-        self._database_connection.execute(
-            """
-            DELETE FROM observation_photos AS photos
-            WHERE photos.project_alias = %s
-                AND photos.observation_id = ANY(%s)
-            """,
-            (project_alias, stale_observation_ids),
-        )
+        self._database_connection.execute(load_sql_query(DELETE_STALE_OBSERVATION_PHOTOS_QUERY_PATH), (project_alias, stale_observation_ids))
 
     def _delete_orphan_observers(self):
         """Delete observers not referenced by any local observation."""
-        self._database_connection.execute(
-            """
-            DELETE FROM observers AS observer_rows
-            WHERE NOT EXISTS (
-                SELECT 1
-                FROM observations AS observation_rows
-                WHERE observation_rows.observer_id = observer_rows.observer_id
-            )
-            """
-        )
+        self._database_connection.execute(load_sql_query(DELETE_ORPHAN_OBSERVERS_QUERY_PATH))
 
     def _delete_orphan_taxa(self):
         """Delete taxa not referenced by observations or their taxon lineages."""
-        self._database_connection.execute(
-            """
-            DELETE FROM taxa AS taxon_rows
-            WHERE NOT EXISTS (
-                SELECT 1
-                FROM observations AS observation_rows
-                WHERE observation_rows.taxon_id = taxon_rows.taxon_id
-            )
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM taxa AS observed_taxa
-                    WHERE observed_taxa.ancestor_ids @> jsonb_build_array(taxon_rows.taxon_id)
-                        AND EXISTS (
-                            SELECT 1
-                            FROM observations AS observation_rows
-                            WHERE observation_rows.taxon_id = observed_taxa.taxon_id
-                        )
-                )
-            """
-        )
+        self._database_connection.execute(load_sql_query(DELETE_ORPHAN_TAXA_QUERY_PATH))
