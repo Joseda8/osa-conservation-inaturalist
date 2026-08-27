@@ -470,13 +470,25 @@ button {
 }
 
 .time-series-plot {
-  min-width: 0;
+  cursor: crosshair;
+  margin: 0 auto;
+  min-width: 45rem;
   position: relative;
+  width: min(100%, 54rem);
+}
+
+.time-series-plot:focus-visible {
+  outline: 2px solid #2d6e55;
+  outline-offset: 0.25rem;
+}
+
+.time-series-plot-scroll {
+  overflow-x: auto;
 }
 
 .time-series-plot svg {
   display: block;
-  height: clamp(18rem, 35vw, 24rem);
+  height: auto;
   overflow: visible;
   width: 100%;
 }
@@ -499,33 +511,10 @@ button {
   stroke-width: 3;
 }
 
-.time-series-points {
-  bottom: 0;
-  left: 0;
-  position: absolute;
-  right: 0;
-  top: 0;
-}
-
-.time-series-point {
-  background: var(--point-color);
-  border: 2px solid #fff;
-  border-radius: 999px;
-  cursor: pointer;
-  height: 0.75rem;
-  padding: 0;
-  position: absolute;
-  transform: translate(-50%, -50%);
-  transition: box-shadow 160ms ease, transform 160ms ease;
-  width: 0.75rem;
-}
-
-.time-series-point:hover,
-.time-series-point:focus-visible,
-.time-series-point.active {
-  box-shadow: 0 0 0 0.25rem rgb(143 211 168 / 50%);
-  outline: none;
-  transform: translate(-50%, -50%) scale(1.25);
+.time-series-active-point {
+  pointer-events: none;
+  stroke: #fff;
+  stroke-width: 3;
 }
 
 .time-series-details {
