@@ -41,7 +41,7 @@ class AnalyzeAndUploadToDriveStep:
         google_drive_uploader = GoogleDriveCsvUploader()
         try:
             for report_path in report_paths:
-                file_id = google_drive_uploader.upload_csv(report_path.name, report_path.read_text(encoding="utf-8"))
+                file_id = google_drive_uploader.upload_csv(report_path.name, report_path.read_text(encoding="utf-8"), output_directory.name)
                 LOGGER.info("Uploaded Google Drive report %s with file ID: %s", report_path.name, file_id)
         except RuntimeError as error:
             LOGGER.warning("Skipped Google Drive upload: %s Local reports are available in: %s", error, output_directory)

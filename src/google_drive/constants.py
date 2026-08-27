@@ -43,5 +43,8 @@ GOOGLE_DRIVE_API_VERSION = "v3"
 # MIME type assigned to uploaded comma-separated value files.
 CSV_MIME_TYPE = "text/csv"
 
+# MIME type assigned to Google Drive folders.
+GOOGLE_DRIVE_FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
+
 # Number of matching Drive files that distinguishes a duplicate-name error.
 MAXIMUM_MATCHING_FILE_COUNT = 2

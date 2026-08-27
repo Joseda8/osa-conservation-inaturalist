@@ -10,7 +10,7 @@ import os
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 
-from .constants import GOOGLE_DRIVE_API_NAME, GOOGLE_DRIVE_API_VERSION, GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR, MAXIMUM_MATCHING_FILE_COUNT
+from .constants import GOOGLE_DRIVE_API_NAME, GOOGLE_DRIVE_API_VERSION, GOOGLE_DRIVE_FOLDER_MIME_TYPE, GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR, MAXIMUM_MATCHING_FILE_COUNT
 from .oauth_credentials import GoogleDriveOAuthCredentials
 
 
@@ -23,10 +23,11 @@ class GoogleDriveCsvReader:
         @param file_name Exact CSV filename.
         @return UTF-8 CSV content.
         """
-        folder_id = self._get_required_environment_variable(GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR)
+        processed_data_folder_id = self._get_required_environment_variable(GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR)
         credentials = GoogleDriveOAuthCredentials().get()
         drive_service = build(GOOGLE_DRIVE_API_NAME, GOOGLE_DRIVE_API_VERSION, credentials=credentials)
-        file_id = self._find_file_id(drive_service, folder_id, file_name)
+        latest_folder_id = self._find_latest_dated_folder_id(drive_service, processed_data_folder_id)
+        file_id = self._find_file_id(drive_service, latest_folder_id, file_name)
         request = drive_service.files().get_media(fileId=file_id, supportsAllDrives=True)
         download_buffer = io.BytesIO()
         downloader = MediaIoBaseDownload(download_buffer, request)
@@ -35,6 +36,22 @@ class GoogleDriveCsvReader:
             _, is_complete = downloader.next_chunk()
 
         return download_buffer.getvalue().decode("utf-8-sig")
+
+    @staticmethod
+    def _find_latest_dated_folder_id(drive_service, processed_data_folder_id: str) -> str:
+        """Find the most recent dated report folder beneath processed-data.
+
+        @param drive_service Authenticated Google Drive client.
+        @param processed_data_folder_id Configured root processed-data folder ID.
+        @return Google Drive ID of the latest dated subfolder.
+        @raises RuntimeError If processed-data has no dated report folder.
+        """
+        query = f"'{processed_data_folder_id}' in parents and mimeType = '{GOOGLE_DRIVE_FOLDER_MIME_TYPE}' and trashed = false"
+        response = drive_service.files().list(q=query, fields="files(id, name)", orderBy="name desc", pageSize=1, supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
+        folders = response.get("files", [])
+        if not folders:
+            raise RuntimeError("Expected at least one dated report folder in the configured processed-data folder; found none.")
+        return folders[0]["id"]
 
     @staticmethod
     def _get_required_environment_variable(variable_name: str) -> str:

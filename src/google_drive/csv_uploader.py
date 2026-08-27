@@ -10,31 +10,65 @@ import os
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 
-from .constants import CSV_MIME_TYPE, GOOGLE_DRIVE_API_NAME, GOOGLE_DRIVE_API_VERSION, GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR, MAXIMUM_MATCHING_FILE_COUNT
+from .constants import CSV_MIME_TYPE, GOOGLE_DRIVE_API_NAME, GOOGLE_DRIVE_API_VERSION, GOOGLE_DRIVE_FOLDER_MIME_TYPE, GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR, MAXIMUM_MATCHING_FILE_COUNT
 from .oauth_credentials import GoogleDriveOAuthCredentials
 
 
 class GoogleDriveCsvUploader:
     """Uploads a CSV to the configured Google Drive folder."""
 
-    def upload_csv(self, file_name: str, csv_content: str) -> str:
-        """Create or replace a CSV file in the configured Google Drive folder.
+    def upload_csv(self, file_name: str, csv_content: str, dated_folder_name: str) -> str:
+        """Create or replace a CSV file in one dated Google Drive folder.
 
         @param csv_content UTF-8 CSV content to upload.
         @param file_name Destination CSV filename.
+        @param dated_folder_name Destination subfolder name formatted as YYYYMMDD.
         @return Google Drive file ID.
         """
-        folder_id = self._get_required_environment_variable(GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR)
+        processed_data_folder_id = self._get_required_environment_variable(GOOGLE_DRIVE_UPLOAD_FOLDER_ID_ENV_VAR)
         credentials = GoogleDriveOAuthCredentials().get()
         drive_service = build(GOOGLE_DRIVE_API_NAME, GOOGLE_DRIVE_API_VERSION, credentials=credentials)
-        existing_file_id = self._find_existing_file_id(drive_service, folder_id, file_name)
+        dated_folder_id = self._get_or_create_dated_folder_id(drive_service, processed_data_folder_id, dated_folder_name)
+        existing_file_id = self._find_existing_file_id(drive_service, dated_folder_id, file_name)
         media = MediaIoBaseUpload(io.BytesIO(csv_content.encode("utf-8")), mimetype=CSV_MIME_TYPE, resumable=False)
         if existing_file_id is None:
-            uploaded_file = drive_service.files().create(body={"name": file_name, "parents": [folder_id]}, media_body=media, fields="id", supportsAllDrives=True).execute()
+            uploaded_file = drive_service.files().create(body={"name": file_name, "parents": [dated_folder_id]}, media_body=media, fields="id", supportsAllDrives=True).execute()
         else:
             uploaded_file = drive_service.files().update(fileId=existing_file_id, media_body=media, fields="id", supportsAllDrives=True).execute()
 
         return uploaded_file["id"]
+
+    def _get_or_create_dated_folder_id(self, drive_service, processed_data_folder_id: str, dated_folder_name: str) -> str:
+        """Find or create the one Drive folder for a report generation date.
+
+        @param drive_service Authenticated Google Drive client.
+        @param processed_data_folder_id Configured root processed-data folder ID.
+        @param dated_folder_name Destination subfolder name formatted as YYYYMMDD.
+        @return Google Drive ID of the dated subfolder.
+        """
+        dated_folder_id = self._find_dated_folder_id(drive_service, processed_data_folder_id, dated_folder_name)
+        if dated_folder_id:
+            return dated_folder_id
+        created_folder = drive_service.files().create(body={"name": dated_folder_name, "mimeType": GOOGLE_DRIVE_FOLDER_MIME_TYPE, "parents": [processed_data_folder_id]}, fields="id", supportsAllDrives=True).execute()
+        return created_folder["id"]
+
+    @staticmethod
+    def _find_dated_folder_id(drive_service, processed_data_folder_id: str, dated_folder_name: str) -> str | None:
+        """Find one non-trashed dated subfolder of processed-data.
+
+        @param drive_service Authenticated Google Drive client.
+        @param processed_data_folder_id Configured root processed-data folder ID.
+        @param dated_folder_name Subfolder name formatted as YYYYMMDD.
+        @return Google Drive folder ID when it exists, otherwise None.
+        @raises RuntimeError If the date identifies multiple folders.
+        """
+        escaped_folder_name = dated_folder_name.replace("\\", "\\\\").replace("'", "\\'")
+        query = f"'{processed_data_folder_id}' in parents and name = '{escaped_folder_name}' and mimeType = '{GOOGLE_DRIVE_FOLDER_MIME_TYPE}' and trashed = false"
+        response = drive_service.files().list(q=query, fields="files(id)", pageSize=MAXIMUM_MATCHING_FILE_COUNT, supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
+        folders = response.get("files", [])
+        if len(folders) > 1:
+            raise RuntimeError(f"Expected at most one dated folder named '{dated_folder_name}' in the configured processed-data folder; found multiple.")
+        return folders[0]["id"] if folders else None
 
     @staticmethod
     def _get_required_environment_variable(variable_name: str) -> str:
