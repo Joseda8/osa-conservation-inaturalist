@@ -11,10 +11,52 @@ const TIME_GROUPS = [{ id: "day", label: "Day" }, { id: "week", label: "Week" },
 const VISIBLE_X_AXIS_LABEL_COUNT = 6;
 const Y_AXIS_LINE_COUNT = 4;
 
+// Pattern for user-entered dashboard date ranges in day-month-year order.
+const DATE_INPUT_PATTERN = /^(\d{2})-(\d{2})-(\d{4})$/;
+
+// Largest calendar period available when plotting one point for each day.
+const MAXIMUM_DAILY_RANGE_MONTHS = 6;
+
 function addDays(date, days) {
   const result = new Date(`${date}T00:00:00Z`);
   result.setUTCDate(result.getUTCDate() + days);
   return result.toISOString().slice(0, 10);
+}
+
+function addMonths(date, months) {
+  const [year, month, day] = date.split("-").map(Number);
+  const targetDate = new Date(Date.UTC(year, month - 1 + months, 1));
+  const targetYear = targetDate.getUTCFullYear();
+  const targetMonth = targetDate.getUTCMonth();
+  const targetMonthLastDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(targetYear, targetMonth, Math.min(day, targetMonthLastDay))).toISOString().slice(0, 10);
+}
+
+function formatDateInput(date) {
+  const [year, month, day] = date.split("-");
+  return `${day}-${month}-${year}`;
+}
+
+function formatDateInputValue(value) {
+  const isoDateParts = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoDateParts) {
+    return formatDateInput(value);
+  }
+  const dateDigits = value.replace(/\D/g, "").slice(0, 8);
+  return [dateDigits.slice(0, 2), dateDigits.slice(2, 4), dateDigits.slice(4, 8)].filter(Boolean).join("-");
+}
+
+function parseDateInput(value) {
+  const dateParts = value.match(DATE_INPUT_PATTERN);
+  if (!dateParts) {
+    return null;
+  }
+  const [, day, month, year] = dateParts;
+  const parsedDate = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  if (parsedDate.getUTCFullYear() !== Number(year) || parsedDate.getUTCMonth() !== Number(month) - 1 || parsedDate.getUTCDate() !== Number(day)) {
+    return null;
+  }
+  return `${year}-${month}-${day}`;
 }
 
 function getWeekStart(date) {
@@ -84,12 +126,17 @@ export default function TimeSeriesChart({ ariaLabel, records, series, valueLabel
   const [rangePreset, setRangePreset] = useState("last-7");
   const [startDate, setStartDate] = useState(() => addDays(defaultLatestDate, 1 - DEFAULT_RANGE_DAYS));
   const [endDate, setEndDate] = useState(defaultLatestDate);
+  const [pendingStartDate, setPendingStartDate] = useState(() => formatDateInput(addDays(defaultLatestDate, 1 - DEFAULT_RANGE_DAYS)));
+  const [pendingEndDate, setPendingEndDate] = useState(() => formatDateInput(defaultLatestDate));
   const [activePoint, setActivePoint] = useState(null);
   const chartWidth = 720;
   const plotWidth = chartWidth - CHART_PADDING.left - CHART_PADDING.right;
   const plotHeight = CHART_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom;
 
   const chartData = useMemo(() => {
+    if (!startDate || !endDate) {
+      return [];
+    }
     const periodKeys = getPeriodKeys(startDate, endDate, grouping);
     const valuesByPeriodAndSeries = new Map(periodKeys.map((periodKey) => [periodKey, new Map()]));
     records.filter((record) => record.date >= startDate && record.date <= endDate).forEach((record) => {
@@ -114,21 +161,31 @@ export default function TimeSeriesChart({ ariaLabel, records, series, valueLabel
   }
 
   function selectRange(preset) {
+    const selectedStartDate = preset.id === "all" ? earliestDate : addDays(latestDate, 1 - preset.days);
     setRangePreset(preset.id);
+    setPendingEndDate(formatDateInput(latestDate));
+    setPendingStartDate(formatDateInput(selectedStartDate));
+    setStartDate(selectedStartDate);
     setEndDate(latestDate);
-    setStartDate(preset.id === "all" ? earliestDate : addDays(latestDate, 1 - preset.days));
+    if (preset.id === "all") {
+      setGrouping("year");
+    }
     setActivePoint(null);
   }
 
   function updateStartDate(value) {
     setRangePreset("custom");
-    setStartDate(value);
-    setActivePoint(null);
+    setPendingStartDate(formatDateInputValue(value));
   }
 
   function updateEndDate(value) {
     setRangePreset("custom");
-    setEndDate(value);
+    setPendingEndDate(formatDateInputValue(value));
+  }
+
+  function refreshDateRange() {
+    setStartDate(parseDateInput(pendingStartDate));
+    setEndDate(parseDateInput(pendingEndDate));
     setActivePoint(null);
   }
 
@@ -159,17 +216,22 @@ export default function TimeSeriesChart({ ariaLabel, records, series, valueLabel
     setActivePoint({ pointIndex, seriesIndex: currentPoint.seriesIndex });
   }
 
-  if (startDate > endDate) {
-    return <p className="empty-state">Choose an end date on or after the start date.</p>;
-  }
+  const pendingStartDateIso = parseDateInput(pendingStartDate);
+  const pendingEndDateIso = parseDateInput(pendingEndDate);
+  const isAllTimeRange = startDate === earliestDate && endDate === latestDate;
+  const isPendingDailyRangeTooLong = grouping === "day" && pendingStartDateIso && pendingEndDateIso && pendingEndDateIso > addMonths(pendingStartDateIso, MAXIMUM_DAILY_RANGE_MONTHS);
+  const isAppliedDailyRangeTooLong = endDate > addMonths(startDate, MAXIMUM_DAILY_RANGE_MONTHS);
+  const rangeErrorMessage = !pendingStartDate || !pendingEndDate ? "Choose both a start date and an end date." : !pendingStartDateIso || !pendingEndDateIso ? "Use the DD-MM-YYYY date format." : pendingStartDateIso > pendingEndDateIso ? "Choose an end date on or after the start date." : isPendingDailyRangeTooLong ? "Day grouping is limited to six months. Choose another grouping or a shorter range." : null;
+  const timeSeriesControls = <div className="time-series-controls">
+    <div className="time-series-control-group"><span>Range</span><div className="time-series-button-group">{RANGE_PRESETS.map((preset) => <button aria-pressed={rangePreset === preset.id} className={rangePreset === preset.id ? "time-series-control active" : "time-series-control"} key={preset.id} onClick={() => selectRange(preset)} type="button">{preset.label}</button>)}</div></div>
+    <div className="time-series-control-group"><span>Group by</span><div className="time-series-button-group">{TIME_GROUPS.map((timeGroup) => <button aria-pressed={grouping === timeGroup.id} className={grouping === timeGroup.id ? "time-series-control active" : "time-series-control"} disabled={(isAllTimeRange && timeGroup.id !== "year") || (timeGroup.id === "day" && isAppliedDailyRangeTooLong)} key={timeGroup.id} onClick={() => { setGrouping(timeGroup.id); setActivePoint(null); }} title={timeGroup.id === "day" && isAppliedDailyRangeTooLong ? "Day grouping is limited to six months" : undefined} type="button">{timeGroup.label}</button>)}</div></div>
+    <div className="time-series-date-range"><label>From<input inputMode="numeric" maxLength="10" onChange={(event) => updateStartDate(event.target.value)} placeholder="DD-MM-YYYY" type="text" value={pendingStartDate} /></label><label>To<input inputMode="numeric" maxLength="10" onChange={(event) => updateEndDate(event.target.value)} placeholder="DD-MM-YYYY" type="text" value={pendingEndDate} /></label><button aria-label="Refresh graph" className="time-series-refresh" disabled={rangeErrorMessage !== null} onClick={refreshDateRange} title="Refresh graph" type="button">↻</button></div>
+  </div>;
 
   return (
     <section aria-label={ariaLabel} className="time-series-chart">
-      <div className="time-series-controls">
-        <div className="time-series-control-group"><span>Range</span><div className="time-series-button-group">{RANGE_PRESETS.map((preset) => <button aria-pressed={rangePreset === preset.id} className={rangePreset === preset.id ? "time-series-control active" : "time-series-control"} key={preset.id} onClick={() => selectRange(preset)} type="button">{preset.label}</button>)}</div></div>
-        <div className="time-series-control-group"><span>Group by</span><div className="time-series-button-group">{TIME_GROUPS.map((timeGroup) => <button aria-pressed={grouping === timeGroup.id} className={grouping === timeGroup.id ? "time-series-control active" : "time-series-control"} key={timeGroup.id} onClick={() => { setGrouping(timeGroup.id); setActivePoint(null); }} type="button">{timeGroup.label}</button>)}</div></div>
-        <div className="time-series-date-range"><label>From<input max={endDate} min={earliestDate} onChange={(event) => updateStartDate(event.target.value)} type="date" value={startDate} /></label><label>To<input max={latestDate} min={startDate} onChange={(event) => updateEndDate(event.target.value)} type="date" value={endDate} /></label></div>
-      </div>
+      {timeSeriesControls}
+      {rangeErrorMessage && <p className="time-series-range-validation">{rangeErrorMessage}</p>}
       <div className="time-series-plot-scroll"><div aria-label={`${ariaLabel}. Hover to inspect a date, or use the left and right arrow keys.`} className="time-series-plot" onFocus={() => setActivePoint((currentPoint) => currentPoint ?? { pointIndex: 0, seriesIndex: 0 })} onKeyDown={selectPointByKeyboard} onMouseLeave={() => setActivePoint(null)} onMouseMove={(event) => selectPointByPointerPosition(event.clientX, event.clientY, event.currentTarget)} role="group" tabIndex={0}><svg aria-hidden="true" viewBox={`0 0 ${chartWidth} ${CHART_HEIGHT}`}>{Array.from({ length: Y_AXIS_LINE_COUNT }, (_, lineIndex) => {
         const y = CHART_PADDING.top + (lineIndex * plotHeight) / (Y_AXIS_LINE_COUNT - 1);
         const value = Math.round(maximumValue - (lineIndex * maximumValue) / (Y_AXIS_LINE_COUNT - 1));

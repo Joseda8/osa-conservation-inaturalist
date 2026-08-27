@@ -442,13 +442,18 @@ button {
   padding: 0.4rem 0.65rem;
 }
 
-.time-series-control:hover,
-.time-series-control:focus-visible,
+.time-series-control:not(:disabled):hover,
+.time-series-control:not(:disabled):focus-visible,
 .time-series-control.active {
   background: #2d6e55;
   border-color: #2d6e55;
   color: #fff;
   outline: none;
+}
+
+.time-series-control:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .time-series-date-range {
@@ -467,6 +472,31 @@ button {
   color: #1d2a25;
   font: inherit;
   padding: 0.4rem;
+  width: 8.5rem;
+}
+
+.time-series-refresh {
+  align-self: end;
+  background: #2d6e55;
+  border: 1px solid #2d6e55;
+  border-radius: 999px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.25rem;
+  height: 2.4rem;
+  line-height: 1;
+  padding: 0;
+  width: 2.4rem;
+}
+
+.time-series-refresh:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.time-series-range-validation {
+  color: #9a331e;
+  margin: -1rem 0 1rem;
 }
 
 .time-series-plot {
