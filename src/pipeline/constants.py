@@ -28,6 +28,12 @@ MONTHLY_UPDATE_PIPELINE_NAME = "monthly-update"
 # Name of the pipeline that imports all available historical data.
 HISTORICAL_LOAD_PIPELINE_NAME = "historical-load"
 
+# Name of the pipeline that authorizes the local Google user without uploading reports.
+GOOGLE_AUTH_PIPELINE_NAME = "auth-with-google"
+
+# Step run by the Google authorization pipeline.
+GOOGLE_AUTH_PIPELINE_STEP_NAMES = ("auth-with-google",)
+
 # Steps that download, load, reconcile, and enrich a data update.
 DATA_UPDATE_PIPELINE_STEP_NAMES = ("download-raw-data", "download-trends", "load-raw-data-to-db", "reconcile-project-observations", "enrich-taxonomy")
 

@@ -6,5 +6,6 @@
 
 from .csv_reader import GoogleDriveCsvReader
 from .csv_uploader import GoogleDriveCsvUploader
+from .oauth_credentials import GoogleDriveOAuthCredentials
 
-__all__ = ["GoogleDriveCsvReader", "GoogleDriveCsvUploader"]
+__all__ = ["GoogleDriveCsvReader", "GoogleDriveCsvUploader", "GoogleDriveOAuthCredentials"]

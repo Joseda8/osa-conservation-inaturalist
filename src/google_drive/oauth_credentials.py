@@ -19,19 +19,41 @@ class GoogleDriveOAuthCredentials:
     """Loads OAuth credentials for the Google user selected during authorization."""
 
     def get(self) -> Credentials:
-        """Return valid credentials, authorizing locally when no token exists.
+        """Return valid existing credentials without opening a browser.
 
         @return Valid OAuth credentials.
-        @raises RuntimeError If GitHub Actions lacks the required OAuth token.
+        @raises RuntimeError If Google authorization has not been completed.
         """
-        credentials = self._load_credentials()
-        if credentials and credentials.expired and credentials.refresh_token:
-            credentials.refresh(Request())
-        if credentials and credentials.valid:
+        credentials = self._get_valid_credentials()
+        if credentials:
+            return credentials
+        if os.environ.get(GOOGLE_DRIVE_OAUTH_TOKEN_JSON_ENV_VAR):
+            raise RuntimeError(f"The OAuth token in {GOOGLE_DRIVE_OAUTH_TOKEN_JSON_ENV_VAR} is invalid or expired. Authorize again locally and update the GitHub Actions secret.")
+        raise RuntimeError("Google authorization is required. Run --pipeline auth-with-google before accessing Google Drive.")
+
+    def authorize(self) -> Credentials:
+        """Return valid credentials or open the local Google authorization flow.
+
+        @return Valid OAuth credentials.
+        @raises RuntimeError If an invalid GitHub Actions token is present.
+        """
+        credentials = self._get_valid_credentials()
+        if credentials:
             return credentials
         if os.environ.get(GOOGLE_DRIVE_OAUTH_TOKEN_JSON_ENV_VAR):
             raise RuntimeError(f"The OAuth token in {GOOGLE_DRIVE_OAUTH_TOKEN_JSON_ENV_VAR} is invalid or expired. Authorize again locally and update the GitHub Actions secret.")
         return self._authorize_locally()
+
+    @classmethod
+    def _get_valid_credentials(cls) -> Credentials | None:
+        """Load and refresh stored OAuth credentials when possible.
+
+        @return Valid stored credentials, if available.
+        """
+        credentials = cls._load_credentials()
+        if credentials and credentials.expired and credentials.refresh_token:
+            credentials.refresh(Request())
+        return credentials if credentials and credentials.valid else None
 
     @staticmethod
     def _load_credentials() -> Credentials | None:

@@ -11,6 +11,7 @@ from .load_raw_data_to_database_step import LoadRawDataToDatabaseStep
 from .migrate_database_step import MigrateDatabaseStep
 from .reconcile_project_observations_step import ReconcileProjectObservationsStep
 from .analyze_and_upload_to_drive_step import AnalyzeAndUploadToDriveStep
+from .authenticate_with_google_step import AuthenticateWithGoogleStep
 from .refresh_github_pages_step import RefreshGitHubPagesStep
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     "MigrateDatabaseStep",
     "ReconcileProjectObservationsStep",
     "AnalyzeAndUploadToDriveStep",
+    "AuthenticateWithGoogleStep",
     "RefreshGitHubPagesStep",
 ]

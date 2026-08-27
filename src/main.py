@@ -10,7 +10,7 @@ from datetime import date, datetime, time, timedelta
 
 from inaturalist_client import OSA_PROJECTS, ProjectDownloadSummary
 from pipeline import Pipeline, PipelineContext
-from pipeline.constants import DATA_UPDATE_PIPELINE_STEP_NAMES, DEFAULT_DOWNLOAD_MODE, DEFAULT_FAILURE_COOLDOWN_SECONDS, DEFAULT_LIST_STEPS, DEFAULT_LOAD_DATE, DEFAULT_NAMED_PIPELINE, DEFAULT_OBSERVED_DATE_END, DEFAULT_OBSERVED_DATE_START, DEFAULT_OBSERVATIONS_PER_PAGE, DEFAULT_PIPELINE_MONTH, DEFAULT_PIPELINE_STEP_NAMES, DEFAULT_PIPELINE_YEAR, DEFAULT_REQUEST_COOLDOWN_SECONDS, DEFAULT_SELECTED_PIPELINE_STEPS, DEFAULT_TAXONOMY_MODE, DEFAULT_TREND_END_MONTH, DEFAULT_TREND_END_YEAR, DEFAULT_TREND_MODE, DEFAULT_TREND_MONTH, DEFAULT_TREND_YEAR, DEFAULT_UPDATED_SINCE, HISTORICAL_LOAD_PIPELINE_NAME, MONTHLY_UPDATE_PIPELINE_NAME
+from pipeline.constants import DATA_UPDATE_PIPELINE_STEP_NAMES, DEFAULT_DOWNLOAD_MODE, DEFAULT_FAILURE_COOLDOWN_SECONDS, DEFAULT_LIST_STEPS, DEFAULT_LOAD_DATE, DEFAULT_NAMED_PIPELINE, DEFAULT_OBSERVED_DATE_END, DEFAULT_OBSERVED_DATE_START, DEFAULT_OBSERVATIONS_PER_PAGE, DEFAULT_PIPELINE_MONTH, DEFAULT_PIPELINE_STEP_NAMES, DEFAULT_PIPELINE_YEAR, DEFAULT_REQUEST_COOLDOWN_SECONDS, DEFAULT_SELECTED_PIPELINE_STEPS, DEFAULT_TAXONOMY_MODE, DEFAULT_TREND_END_MONTH, DEFAULT_TREND_END_YEAR, DEFAULT_TREND_MODE, DEFAULT_TREND_MONTH, DEFAULT_TREND_YEAR, DEFAULT_UPDATED_SINCE, GOOGLE_AUTH_PIPELINE_NAME, GOOGLE_AUTH_PIPELINE_STEP_NAMES, HISTORICAL_LOAD_PIPELINE_NAME, MONTHLY_UPDATE_PIPELINE_NAME
 from pipeline.pipeline_step import PipelineStep
 from pipeline.steps import (
     DownloadRawDataStep,
@@ -20,6 +20,7 @@ from pipeline.steps import (
     MigrateDatabaseStep,
     ReconcileProjectObservationsStep,
     AnalyzeAndUploadToDriveStep,
+    AuthenticateWithGoogleStep,
     RefreshGitHubPagesStep,
 )
 
@@ -32,6 +33,7 @@ _STEP_FACTORIES = {
     MigrateDatabaseStep.name: MigrateDatabaseStep,
     ReconcileProjectObservationsStep.name: ReconcileProjectObservationsStep,
     AnalyzeAndUploadToDriveStep.name: AnalyzeAndUploadToDriveStep,
+    AuthenticateWithGoogleStep.name: AuthenticateWithGoogleStep,
     RefreshGitHubPagesStep.name: RefreshGitHubPagesStep,
 }
 
@@ -42,7 +44,7 @@ def _parse_arguments() -> argparse.Namespace:
     """
     argument_parser = argparse.ArgumentParser(description="Run the OSA iNaturalist data pipeline.")
     argument_parser.add_argument("--steps", nargs="+", choices=sorted(_STEP_FACTORIES.keys()), default=DEFAULT_SELECTED_PIPELINE_STEPS, help="Pipeline steps to run, in the order provided.")
-    argument_parser.add_argument("--pipeline", choices=(HISTORICAL_LOAD_PIPELINE_NAME, MONTHLY_UPDATE_PIPELINE_NAME), default=DEFAULT_NAMED_PIPELINE, help="Named pipeline to run instead of individual steps.")
+    argument_parser.add_argument("--pipeline", choices=(GOOGLE_AUTH_PIPELINE_NAME, HISTORICAL_LOAD_PIPELINE_NAME, MONTHLY_UPDATE_PIPELINE_NAME), default=DEFAULT_NAMED_PIPELINE, help="Named pipeline to run instead of individual steps.")
     argument_parser.add_argument("--year", type=int, default=DEFAULT_PIPELINE_YEAR, help="Calendar year processed by a named pipeline.")
     argument_parser.add_argument("--month", type=int, choices=range(1, 13), default=DEFAULT_PIPELINE_MONTH, help="Calendar month processed by a named pipeline.")
     argument_parser.add_argument("--list-steps", action="store_true", default=DEFAULT_LIST_STEPS, help="List available pipeline steps and exit.")
@@ -140,6 +142,11 @@ def _configure_named_pipeline(argument_parser: argparse.ArgumentParser, argument
         if arguments.year is not None or arguments.month is not None:
             argument_parser.error("historical-load does not use --year or --month")
         _configure_historical_load(arguments)
+        return
+    if arguments.pipeline == GOOGLE_AUTH_PIPELINE_NAME:
+        if arguments.year is not None or arguments.month is not None:
+            argument_parser.error("auth-with-google does not use --year or --month")
+        arguments.steps = GOOGLE_AUTH_PIPELINE_STEP_NAMES
         return
     if arguments.year is None or arguments.month is None:
         argument_parser.error("monthly-update requires --year and --month")
