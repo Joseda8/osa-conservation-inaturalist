@@ -37,11 +37,11 @@ export function parseCsv(csvContent) {
   return rows;
 }
 
-export function getPieChartSlices(csvContent, categoryColumn, valueColumn, categoryLabels = {}) {
+export function getPieChartSlices(csvContent, categoryColumn, valueColumn, categoryLabels = {}, excludedCategories = []) {
   const [headerRow, ...dataRows] = parseCsv(csvContent);
   const categoryColumnIndex = headerRow.indexOf(categoryColumn);
   const valueColumnIndex = headerRow.indexOf(valueColumn);
-  return dataRows.map((dataRow) => {
+  return dataRows.filter((dataRow) => !excludedCategories.includes(dataRow[categoryColumnIndex])).map((dataRow) => {
     const category = dataRow[categoryColumnIndex];
     return { count: Number(dataRow[valueColumnIndex]), label: categoryLabels[category] ?? category };
   });
@@ -56,6 +56,18 @@ export function getCsvValue(csvContent, valueColumn) {
   return Number.isFinite(value) ? value : 0;
 }
 
+export function getCsvValueForCategory(csvContent, categoryColumn, categoryValue, valueColumn) {
+  const [headerRow, ...dataRows] = parseCsv(csvContent);
+  const categoryColumnIndex = headerRow?.indexOf(categoryColumn) ?? -1;
+  const valueColumnIndex = headerRow?.indexOf(valueColumn) ?? -1;
+  const dataRow = dataRows.find((row) => row[categoryColumnIndex] === categoryValue);
+  if (!dataRow || valueColumnIndex === -1) {
+    return null;
+  }
+  const value = Number(dataRow[valueColumnIndex]);
+  return Number.isFinite(value) ? value : null;
+}
+
 export function getOptionalCsvValue(csvContent, valueColumn) {
   const [headerRow, firstDataRow] = parseCsv(csvContent);
   const valueColumnIndex = headerRow?.indexOf(valueColumn) ?? -1;
@@ -66,7 +78,7 @@ export function getOptionalCsvValue(csvContent, valueColumn) {
   return Number.isFinite(value) ? value : null;
 }
 
-export function getGroupedBarChartData(csvContent, categoryColumn, seriesColumn, valueColumn, annotationColumn, totalColumn, categoryLabels = {}, seriesLabels = {}) {
+export function getGroupedBarChartData(csvContent, categoryColumn, seriesColumn, valueColumn, annotationColumn, totalColumn, categoryLabels = {}, seriesLabels = {}, excludedSeries = [], seriesOrder = []) {
   const [headerRow, ...dataRows] = parseCsv(csvContent);
   const categoryColumnIndex = headerRow.indexOf(categoryColumn);
   const seriesColumnIndex = headerRow.indexOf(seriesColumn);
@@ -77,7 +89,7 @@ export function getGroupedBarChartData(csvContent, categoryColumn, seriesColumn,
   const seriesKeys = [];
   const totalsBySeries = new Map();
 
-  dataRows.forEach((dataRow) => {
+  dataRows.filter((dataRow) => !excludedSeries.includes(dataRow[seriesColumnIndex])).forEach((dataRow) => {
     const category = dataRow[categoryColumnIndex];
     const series = dataRow[seriesColumnIndex];
     if (!valuesByCategoryAndSeries.has(category)) {
@@ -92,19 +104,20 @@ export function getGroupedBarChartData(csvContent, categoryColumn, seriesColumn,
     }
   });
 
+  const orderedSeriesKeys = [...seriesKeys].sort((firstSeries, secondSeries) => (seriesOrder.indexOf(firstSeries) === -1 ? seriesOrder.length : seriesOrder.indexOf(firstSeries)) - (seriesOrder.indexOf(secondSeries) === -1 ? seriesOrder.length : seriesOrder.indexOf(secondSeries)));
   return {
-    categories: [...valuesByCategoryAndSeries].map(([category, valuesBySeries]) => ({ bars: seriesKeys.map((series) => valuesBySeries.get(series) ?? { annotation: null, value: 0 }), label: categoryLabels[category] ?? category })),
-    series: seriesKeys.map((series, seriesIndex) => ({ color: `var(--bar-color-${seriesIndex + 1})`, label: seriesLabels[series] ?? series, total: totalsBySeries.get(series) })),
+    categories: [...valuesByCategoryAndSeries].map(([category, valuesBySeries]) => ({ bars: orderedSeriesKeys.map((series) => valuesBySeries.get(series) ?? { annotation: null, value: 0 }), label: categoryLabels[category] ?? category })),
+    series: orderedSeriesKeys.map((series, seriesIndex) => ({ color: `var(--bar-color-${seriesIndex + 1})`, label: seriesLabels[series] ?? series, total: totalsBySeries.get(series) })),
   };
 }
 
-export function getTimeSeriesData(csvContent, dateColumn, seriesColumn, valueColumn, seriesLabels = {}) {
+export function getTimeSeriesData(csvContent, dateColumn, seriesColumn, valueColumn, seriesLabels = {}, excludedSeries = [], seriesOrder = []) {
   const [headerRow, ...dataRows] = parseCsv(csvContent);
   const dateColumnIndex = headerRow.indexOf(dateColumn);
   const seriesColumnIndex = headerRow.indexOf(seriesColumn);
   const valueColumnIndex = headerRow.indexOf(valueColumn);
   const seriesKeys = [];
-  const records = dataRows.map((dataRow) => {
+  const records = dataRows.filter((dataRow) => !excludedSeries.includes(dataRow[seriesColumnIndex])).map((dataRow) => {
     const series = dataRow[seriesColumnIndex];
     if (!seriesKeys.includes(series)) {
       seriesKeys.push(series);
@@ -112,5 +125,6 @@ export function getTimeSeriesData(csvContent, dateColumn, seriesColumn, valueCol
     return { date: dataRow[dateColumnIndex], series, value: Number(dataRow[valueColumnIndex]) || 0 };
   });
 
-  return { records, series: seriesKeys.map((series, seriesIndex) => ({ color: `var(--bar-color-${seriesIndex + 1})`, id: series, label: seriesLabels[series] ?? series })) };
+  const orderedSeriesKeys = [...seriesKeys].sort((firstSeries, secondSeries) => (seriesOrder.indexOf(firstSeries) === -1 ? seriesOrder.length : seriesOrder.indexOf(firstSeries)) - (seriesOrder.indexOf(secondSeries) === -1 ? seriesOrder.length : seriesOrder.indexOf(secondSeries)));
+  return { records, series: orderedSeriesKeys.map((series, seriesIndex) => ({ color: `var(--bar-color-${seriesIndex + 1})`, id: series, label: seriesLabels[series] ?? series })) };
 }
