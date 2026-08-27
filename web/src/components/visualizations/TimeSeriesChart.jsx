@@ -117,16 +117,18 @@ function getTickIndexes(pointCount) {
   return Array.from({ length: VISIBLE_X_AXIS_LABEL_COUNT }, (_, index) => Math.round((index * (pointCount - 1)) / (VISIBLE_X_AXIS_LABEL_COUNT - 1)));
 }
 
-export default function TimeSeriesChart({ ariaLabel, records, series, valueLabel }) {
+export default function TimeSeriesChart({ ariaLabel, defaultGrouping = "day", defaultRangePreset = "last-7", records, series, valueLabel }) {
   const dates = records.map((record) => record.date).sort();
   const earliestDate = dates[0];
   const latestDate = dates[dates.length - 1];
   const defaultLatestDate = latestDate ?? "1970-01-01";
-  const [grouping, setGrouping] = useState("day");
-  const [rangePreset, setRangePreset] = useState("last-7");
-  const [startDate, setStartDate] = useState(() => addDays(defaultLatestDate, 1 - DEFAULT_RANGE_DAYS));
+  const defaultRangeDays = RANGE_PRESETS.find((preset) => preset.id === defaultRangePreset)?.days ?? DEFAULT_RANGE_DAYS;
+  const defaultStartDate = defaultRangePreset === "all" ? earliestDate : addDays(defaultLatestDate, 1 - defaultRangeDays);
+  const [grouping, setGrouping] = useState(defaultGrouping);
+  const [rangePreset, setRangePreset] = useState(defaultRangePreset);
+  const [startDate, setStartDate] = useState(defaultStartDate);
   const [endDate, setEndDate] = useState(defaultLatestDate);
-  const [pendingStartDate, setPendingStartDate] = useState(() => formatDateInput(addDays(defaultLatestDate, 1 - DEFAULT_RANGE_DAYS)));
+  const [pendingStartDate, setPendingStartDate] = useState(() => formatDateInput(defaultStartDate));
   const [pendingEndDate, setPendingEndDate] = useState(() => formatDateInput(defaultLatestDate));
   const [activePoint, setActivePoint] = useState(null);
   const chartWidth = 720;
