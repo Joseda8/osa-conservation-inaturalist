@@ -89,6 +89,43 @@ button {
   margin: 0.25rem 0;
 }
 
+.series-selector {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+}
+
+.series-selector > span {
+  color: #5b6d64;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.series-selector-item {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #cddbd0;
+  border-radius: 999px;
+  color: #365246;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 0.35rem;
+  padding: 0.4rem 0.65rem;
+}
+
+.series-selector-item.active {
+  background: #f1f6f1;
+  border-color: #2d6e55;
+}
+
+.series-selector-item:disabled {
+  cursor: not-allowed;
+}
+
 .navigation-item {
   background: transparent;
   border: 0;

@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 
+import SeriesSelector from "./SeriesSelector";
+
 const CHART_HEIGHT = 320;
 const CHART_PADDING = { bottom: 48, left: 54, right: 18, top: 18 };
 
@@ -131,6 +133,8 @@ export default function TimeSeriesChart({ ariaLabel, defaultGrouping = "day", de
   const [pendingStartDate, setPendingStartDate] = useState(() => formatDateInput(defaultStartDate));
   const [pendingEndDate, setPendingEndDate] = useState(() => formatDateInput(defaultLatestDate));
   const [activePoint, setActivePoint] = useState(null);
+  const [selectedSeriesIds, setSelectedSeriesIds] = useState(() => series.map((seriesItem) => seriesItem.id));
+  const visibleSeries = useMemo(() => series.filter((seriesItem) => selectedSeriesIds.includes(seriesItem.id)), [selectedSeriesIds, series]);
   const chartWidth = 720;
   const plotWidth = chartWidth - CHART_PADDING.left - CHART_PADDING.right;
   const plotHeight = CHART_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom;
@@ -146,16 +150,16 @@ export default function TimeSeriesChart({ ariaLabel, defaultGrouping = "day", de
       const periodValues = valuesByPeriodAndSeries.get(periodKey);
       periodValues.set(record.series, (periodValues.get(record.series) ?? 0) + record.value);
     });
-    return periodKeys.map((periodKey) => ({ label: formatPeriodLabel(periodKey, grouping), periodKey, values: series.map((seriesItem) => valuesByPeriodAndSeries.get(periodKey).get(seriesItem.id) ?? 0) }));
-  }, [endDate, grouping, records, series, startDate]);
+    return periodKeys.map((periodKey) => ({ label: formatPeriodLabel(periodKey, grouping), periodKey, values: visibleSeries.map((seriesItem) => valuesByPeriodAndSeries.get(periodKey).get(seriesItem.id) ?? 0) }));
+  }, [endDate, grouping, records, startDate, visibleSeries]);
 
   const maximumValue = useMemo(() => Math.max(...chartData.flatMap((point) => point.values), 0), [chartData]);
   const scaleMaximumValue = Math.max(maximumValue, 1);
-  const linePoints = useMemo(() => series.map((seriesItem, seriesIndex) => chartData.map((point, pointIndex) => {
+  const linePoints = useMemo(() => visibleSeries.map((seriesItem, seriesIndex) => chartData.map((point, pointIndex) => {
     const x = chartData.length === 1 ? CHART_PADDING.left + plotWidth / 2 : CHART_PADDING.left + (pointIndex * plotWidth) / (chartData.length - 1);
     const y = CHART_PADDING.top + plotHeight - (point.values[seriesIndex] / scaleMaximumValue) * plotHeight;
     return `${x},${y}`;
-  }).join(" ")), [chartData, plotHeight, plotWidth, scaleMaximumValue, series]);
+  }).join(" ")), [chartData, plotHeight, plotWidth, scaleMaximumValue, visibleSeries]);
   const selectedPoint = activePoint === null ? null : chartData[activePoint.pointIndex];
 
   if (!earliestDate || !latestDate) {
@@ -188,6 +192,11 @@ export default function TimeSeriesChart({ ariaLabel, defaultGrouping = "day", de
   function refreshDateRange() {
     setStartDate(parseDateInput(pendingStartDate));
     setEndDate(parseDateInput(pendingEndDate));
+    setActivePoint(null);
+  }
+
+  function toggleSeries(seriesId) {
+    setSelectedSeriesIds((currentSeriesIds) => currentSeriesIds.includes(seriesId) ? currentSeriesIds.filter((currentSeriesId) => currentSeriesId !== seriesId) : [...currentSeriesIds, seriesId]);
     setActivePoint(null);
   }
 
@@ -232,17 +241,18 @@ export default function TimeSeriesChart({ ariaLabel, defaultGrouping = "day", de
 
   return (
     <section aria-label={ariaLabel} className="time-series-chart">
+      <SeriesSelector items={series} onToggle={toggleSeries} selectedItemIds={selectedSeriesIds} />
       {timeSeriesControls}
       {rangeErrorMessage && <p className="time-series-range-validation">{rangeErrorMessage}</p>}
       <div className="time-series-plot-scroll"><div aria-label={`${ariaLabel}. Hover to inspect a date, or use the left and right arrow keys.`} className="time-series-plot" onFocus={() => setActivePoint((currentPoint) => currentPoint ?? { pointIndex: 0, seriesIndex: 0 })} onKeyDown={selectPointByKeyboard} onMouseLeave={() => setActivePoint(null)} onMouseMove={(event) => selectPointByPointerPosition(event.clientX, event.clientY, event.currentTarget)} role="group" tabIndex={0}><svg aria-hidden="true" viewBox={`0 0 ${chartWidth} ${CHART_HEIGHT}`}>{Array.from({ length: Y_AXIS_LINE_COUNT }, (_, lineIndex) => {
         const y = CHART_PADDING.top + (lineIndex * plotHeight) / (Y_AXIS_LINE_COUNT - 1);
         const value = Math.round(maximumValue - (lineIndex * maximumValue) / (Y_AXIS_LINE_COUNT - 1));
         return <g key={lineIndex}><line className="time-series-grid-line" x1={CHART_PADDING.left} x2={chartWidth - CHART_PADDING.right} y1={y} y2={y} /><text className="time-series-axis-label" textAnchor="end" x={CHART_PADDING.left - 8} y={y + 4}>{value.toLocaleString()}</text></g>;
-      })}{series.map((seriesItem, seriesIndex) => <polyline className="time-series-line" key={seriesItem.id} points={linePoints[seriesIndex]} stroke={seriesItem.color} />)}{activePoint && <circle className="time-series-active-point" cx={getPointX(activePoint.pointIndex)} cy={getPointY(activePoint.pointIndex, activePoint.seriesIndex)} fill={series[activePoint.seriesIndex].color} r={ACTIVE_POINT_RADIUS} />}{getTickIndexes(chartData.length).map((pointIndex) => {
+      })}{visibleSeries.map((seriesItem, seriesIndex) => <polyline className="time-series-line" key={seriesItem.id} points={linePoints[seriesIndex]} stroke={seriesItem.color} />)}{activePoint && <circle className="time-series-active-point" cx={getPointX(activePoint.pointIndex)} cy={getPointY(activePoint.pointIndex, activePoint.seriesIndex)} fill={visibleSeries[activePoint.seriesIndex].color} r={ACTIVE_POINT_RADIUS} />}{getTickIndexes(chartData.length).map((pointIndex) => {
         const x = getPointX(pointIndex);
         return <text className="time-series-axis-label" key={chartData[pointIndex].periodKey} textAnchor="middle" x={x} y={CHART_HEIGHT - 14}>{chartData[pointIndex].label}</text>;
       })}</svg></div></div>
-      <div className="time-series-details"><div><p className="chart-hint">Hover over the chart for an exact count, or use its arrow keys.</p>{selectedPoint && <div className="chart-tooltip"><strong>{selectedPoint.label} · {series[activePoint.seriesIndex].label}</strong><span>{selectedPoint.values[activePoint.seriesIndex].toLocaleString()} {valueLabel}</span></div>}</div><ul className="chart-legend">{series.map((seriesItem) => <li key={seriesItem.id}><span className="legend-swatch" style={{ backgroundColor: seriesItem.color }} /><span>{seriesItem.label}</span></li>)}</ul></div>
+      <div className="time-series-details"><div><p className="chart-hint">Hover over the chart for an exact count, or use its arrow keys.</p>{selectedPoint && <div className="chart-tooltip"><strong>{selectedPoint.label} · {visibleSeries[activePoint.seriesIndex].label}</strong><span>{selectedPoint.values[activePoint.seriesIndex].toLocaleString()} {valueLabel}</span></div>}</div><ul className="chart-legend">{visibleSeries.map((seriesItem) => <li key={seriesItem.id}><span className="legend-swatch" style={{ backgroundColor: seriesItem.color }} /><span>{seriesItem.label}</span></li>)}</ul></div>
     </section>
   );
 }

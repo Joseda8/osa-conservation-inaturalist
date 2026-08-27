@@ -43,7 +43,7 @@ export function getPieChartSlices(csvContent, categoryColumn, valueColumn, categ
   const valueColumnIndex = headerRow.indexOf(valueColumn);
   return dataRows.filter((dataRow) => !excludedCategories.includes(dataRow[categoryColumnIndex])).map((dataRow) => {
     const category = dataRow[categoryColumnIndex];
-    return { count: Number(dataRow[valueColumnIndex]), label: categoryLabels[category] ?? category };
+    return { count: Number(dataRow[valueColumnIndex]), id: category, label: categoryLabels[category] ?? category };
   });
 }
 
@@ -107,7 +107,7 @@ export function getGroupedBarChartData(csvContent, categoryColumn, seriesColumn,
   const orderedSeriesKeys = [...seriesKeys].sort((firstSeries, secondSeries) => (seriesOrder.indexOf(firstSeries) === -1 ? seriesOrder.length : seriesOrder.indexOf(firstSeries)) - (seriesOrder.indexOf(secondSeries) === -1 ? seriesOrder.length : seriesOrder.indexOf(secondSeries)));
   return {
     categories: [...valuesByCategoryAndSeries].map(([category, valuesBySeries]) => ({ bars: orderedSeriesKeys.map((series) => valuesBySeries.get(series) ?? { annotation: null, value: 0 }), label: categoryLabels[category] ?? category })),
-    series: orderedSeriesKeys.map((series, seriesIndex) => ({ color: `var(--bar-color-${seriesIndex + 1})`, label: seriesLabels[series] ?? series, total: hiddenTotalSeries.includes(series) ? null : totalsBySeries.get(series) })),
+    series: orderedSeriesKeys.map((series, seriesIndex) => ({ color: `var(--bar-color-${seriesIndex + 1})`, id: series, label: seriesLabels[series] ?? series, total: hiddenTotalSeries.includes(series) ? null : totalsBySeries.get(series) })),
   };
 }
 
