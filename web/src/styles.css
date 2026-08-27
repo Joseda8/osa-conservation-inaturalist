@@ -335,6 +335,11 @@ button {
   padding: 1.5rem;
 }
 
+.grouped-bar-chart > .series-selector {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
 .grouped-bar-chart-plot {
   background: linear-gradient(180deg, #f7fbf7, #edf7ef);
   border-radius: 0.6rem;

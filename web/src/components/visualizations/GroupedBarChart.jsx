@@ -32,7 +32,7 @@ export default function GroupedBarChart({ ariaLabel, categories, series, total =
       <div className="grouped-bar-chart-details">
         <p className="chart-hint">Hover or focus a bar for its exact count.</p>
         {selectedBar && <div className="chart-tooltip"><strong>{selectedBar.category.label} · {selectedBar.series.label}</strong><span>{selectedBar.category.bars[selectedBar.series.seriesIndex].value.toLocaleString()} {valueLabel}</span>{selectedBar.category.bars[selectedBar.series.seriesIndex].annotation !== null && <span>{selectedBar.category.bars[selectedBar.series.seriesIndex].annotation.toFixed(1)}% of {selectedBar.series.label} {valueLabel}</span>}</div>}
-        <ul className="chart-legend">{series.map((seriesItem) => <li key={seriesItem.label}><span className="legend-swatch" style={{ backgroundColor: seriesItem.color }} /><span>{seriesItem.label}</span></li>)}</ul>
+        <ul className="chart-legend">{visibleSeries.map((seriesItem) => <li key={seriesItem.label}><span className="legend-swatch" style={{ backgroundColor: seriesItem.color }} /><span>{seriesItem.label}</span></li>)}</ul>
       </div>
     </section>
   );

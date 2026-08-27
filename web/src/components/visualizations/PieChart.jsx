@@ -1,12 +1,8 @@
 import { useState } from "react";
 
-import SeriesSelector from "./SeriesSelector";
-
 export default function PieChart({ ariaLabel, slices, summaryItems = [], total = null, totalLabel, valueLabel }) {
   const [hoveredSliceIndex, setHoveredSliceIndex] = useState(null);
-  const [selectedSliceIds, setSelectedSliceIds] = useState(() => slices.map((slice) => slice.id));
-  const selectableSlices = slices.map((slice, sliceIndex) => ({ ...slice, color: `var(--pie-color-${sliceIndex + 1})` }));
-  const visibleSlices = selectableSlices.filter((slice) => selectedSliceIds.includes(slice.id));
+  const visibleSlices = slices.map((slice, sliceIndex) => ({ ...slice, color: `var(--pie-color-${sliceIndex + 1})` }));
   const sliceTotal = visibleSlices.reduce((totalValue, slice) => totalValue + slice.count, 0);
   const totalValue = total ?? sliceTotal;
   const activeSlice = hoveredSliceIndex === null ? null : visibleSlices[hoveredSliceIndex];
@@ -21,14 +17,8 @@ export default function PieChart({ ariaLabel, slices, summaryItems = [], total =
     return { x: 50 + 40 * Math.cos(radians), y: 50 + 40 * Math.sin(radians) };
   }
 
-  function toggleSlice(sliceId) {
-    setSelectedSliceIds((currentSliceIds) => currentSliceIds.includes(sliceId) ? currentSliceIds.filter((currentSliceId) => currentSliceId !== sliceId) : [...currentSliceIds, sliceId]);
-    setHoveredSliceIndex(null);
-  }
-
   return (
     <>
-      <SeriesSelector items={selectableSlices} onToggle={toggleSlice} selectedItemIds={selectedSliceIds} />
       <div className="pie-chart-layout">
       <div className="pie-chart" role="img" aria-label={ariaLabel}>
         <svg viewBox="0 0 100 100">
