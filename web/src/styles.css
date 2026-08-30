@@ -199,14 +199,33 @@ button {
 }
 
 .sidebar-report-category {
-  color: #8fd3a8;
   display: grid;
-  font-size: 0.78rem;
-  font-weight: 700;
   gap: 0.25rem;
   letter-spacing: 0.04em;
   margin: 0.55rem 0 0;
+}
+
+.sidebar-report-category-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: #8fd3a8;
+  cursor: pointer;
+  display: flex;
+  font-size: 0.78rem;
+  font-weight: 700;
+  justify-content: space-between;
+  letter-spacing: 0.04em;
+  padding: 0.25rem 0;
+  text-align: left;
   text-transform: uppercase;
+  width: 100%;
+}
+
+.sidebar-report-category-toggle:hover,
+.sidebar-report-category-toggle:focus-visible {
+  color: #fff;
+  outline: none;
 }
 
 .sidebar-report-category > .sidebar-report-navigation-item {
