@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function PieChart({ ariaLabel, slices, summaryItems = [], total = null, totalLabel, valueLabel }) {
+export default function PieChart({ ariaLabel, sliceDetailLabel, sliceDetailValueLabel, slices, summaryItems = [], total = null, totalLabel, valueLabel }) {
   const [hoveredSliceIndex, setHoveredSliceIndex] = useState(null);
   const visibleSlices = slices.map((slice, sliceIndex) => ({ ...slice, color: `var(--pie-color-${sliceIndex + 1})` }));
   const sliceTotal = visibleSlices.reduce((totalValue, slice) => totalValue + slice.count, 0);
@@ -35,9 +35,9 @@ export default function PieChart({ ariaLabel, slices, summaryItems = [], total =
       </div>
       <div className="pie-chart-details">
         <p className="chart-hint">Hover or focus a slice for its exact count.</p>
-        {activeSlice && <div className="chart-tooltip"><strong>{activeSlice.label}</strong><span>{activeSlice.count.toLocaleString()} {valueLabel}</span><span>{((activeSlice.count / sliceTotal) * 100).toFixed(1)}%</span></div>}
+        {activeSlice && <div className="chart-tooltip"><strong>{activeSlice.label}</strong><span>{activeSlice.count.toLocaleString()} {valueLabel}</span><span>{((activeSlice.count / sliceTotal) * 100).toFixed(1)}%</span>{activeSlice.detail !== null && <span>{sliceDetailLabel}: {activeSlice.detail.toLocaleString()} {sliceDetailValueLabel}</span>}</div>}
         <ul className="chart-legend">
-          {visibleSlices.map((slice) => <li key={slice.id}><span className="legend-swatch" style={{ backgroundColor: slice.color }} /><span>{slice.label}</span><strong>{((slice.count / sliceTotal) * 100).toFixed(1)}%</strong></li>)}
+          {visibleSlices.map((slice) => <li key={slice.id}><span className="legend-swatch" style={{ backgroundColor: slice.color }} /><span className="pie-legend-label"><span>{slice.label}</span>{slice.detail !== null && <small>{sliceDetailLabel}: {slice.detail.toLocaleString()} {sliceDetailValueLabel}</small>}</span><strong>{((slice.count / sliceTotal) * 100).toFixed(1)}%</strong></li>)}
         </ul>
         <div className="chart-total"><span>{totalLabel}</span><strong>{totalValue.toLocaleString()}</strong></div>
         {summaryItems.map((summaryItem) => <div className="chart-total" key={summaryItem.label}><span>{summaryItem.label}</span><strong>{summaryItem.value.toLocaleString()}</strong></div>)}
