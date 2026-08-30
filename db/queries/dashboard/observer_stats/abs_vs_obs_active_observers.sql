@@ -1,4 +1,4 @@
--- Counts active observers and their average observation lifespan for ABS, OBS, and their deduplicated aggregate.
+-- Compares active and inactive observers and reports active-observer lifespan for ABS, OBS, and their deduplicated aggregate.
 
 WITH project_observations AS (
     SELECT
@@ -36,37 +36,48 @@ all_project_observations AS (
             project_alias
     ) AS aggregated_observations
 ),
-active_observers AS (
+observer_metrics AS (
     SELECT
         project_alias,
         observer_id,
+        COALESCE(BOOL_OR(created_at >= CURRENT_TIMESTAMP - INTERVAL '1 year'), FALSE) AS is_active,
         MIN(observed_on) AS first_observed_on,
         MAX(observed_on) AS last_observed_on
     FROM all_project_observations
     GROUP BY
         project_alias,
         observer_id
-    HAVING BOOL_OR(created_at >= CURRENT_TIMESTAMP - INTERVAL '1 year')
 ),
-active_project_metrics AS (
+project_metrics AS (
     SELECT
         project_alias,
-        COUNT(*) AS active_observer_count,
-        ROUND(AVG(EXTRACT(EPOCH FROM last_observed_on - first_observed_on) / 86400), 1) AS average_observer_lifespan_days
-    FROM active_observers
+        COUNT(*) AS total_observer_count,
+        COUNT(*) FILTER (WHERE is_active) AS active_observer_count,
+        COUNT(*) FILTER (WHERE NOT is_active) AS inactive_observer_count,
+        ROUND(AVG(EXTRACT(EPOCH FROM last_observed_on - first_observed_on) / 86400) FILTER (WHERE is_active), 1) AS average_active_observer_lifespan_days
+    FROM observer_metrics
     GROUP BY project_alias
 )
 SELECT
     aliases.project_alias,
-    'active_observers'::TEXT AS metric_id,
-    COALESCE(active_project_metrics.active_observer_count, 0) AS active_observer_count,
-    COALESCE(active_project_metrics.average_observer_lifespan_days, 0) AS average_observer_lifespan_days
+    activity_status.activity_status,
+    activity_status.observer_count,
+    COALESCE(project_metrics.total_observer_count, 0) AS total_observer_count,
+    ROUND(100.0 * activity_status.observer_count / NULLIF(project_metrics.total_observer_count, 0), 1) AS observer_percentage,
+    COALESCE(project_metrics.average_active_observer_lifespan_days, 0) AS average_active_observer_lifespan_days
 FROM (
     VALUES
         ('abs'::TEXT),
         ('obs'::TEXT),
         ('aggregated'::TEXT)
 ) AS aliases(project_alias)
-LEFT JOIN active_project_metrics
-    ON active_project_metrics.project_alias = aliases.project_alias
-ORDER BY aliases.project_alias;
+LEFT JOIN project_metrics
+    ON project_metrics.project_alias = aliases.project_alias
+CROSS JOIN LATERAL (
+    VALUES
+        ('active'::TEXT, COALESCE(project_metrics.active_observer_count, 0)),
+        ('inactive'::TEXT, COALESCE(project_metrics.inactive_observer_count, 0))
+) AS activity_status(activity_status, observer_count)
+ORDER BY
+    activity_status.activity_status,
+    aliases.project_alias;

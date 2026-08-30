@@ -37,15 +37,13 @@ export function parseCsv(csvContent) {
   return rows;
 }
 
-export function getPieChartSlices(csvContent, categoryColumn, valueColumn, categoryLabels = {}, excludedCategories = [], detailColumn) {
+export function getPieChartSlices(csvContent, categoryColumn, valueColumn, categoryLabels = {}, excludedCategories = []) {
   const [headerRow, ...dataRows] = parseCsv(csvContent);
   const categoryColumnIndex = headerRow.indexOf(categoryColumn);
   const valueColumnIndex = headerRow.indexOf(valueColumn);
-  const detailColumnIndex = headerRow.indexOf(detailColumn);
   return dataRows.filter((dataRow) => !excludedCategories.includes(dataRow[categoryColumnIndex])).map((dataRow) => {
     const category = dataRow[categoryColumnIndex];
-    const detail = Number(dataRow[detailColumnIndex]);
-    return { count: Number(dataRow[valueColumnIndex]), detail: detailColumnIndex === -1 || !Number.isFinite(detail) ? null : detail, id: category, label: categoryLabels[category] ?? category };
+    return { count: Number(dataRow[valueColumnIndex]), id: category, label: categoryLabels[category] ?? category };
   });
 }
 

@@ -396,16 +396,6 @@ button {
   grid-template-columns: auto 1fr auto;
 }
 
-.pie-legend-label {
-  display: grid;
-  gap: 0.1rem;
-}
-
-.pie-legend-label small {
-  color: #5b6d64;
-  font-size: 0.75rem;
-}
-
 .legend-swatch {
   border-radius: 999px;
   height: 0.75rem;
