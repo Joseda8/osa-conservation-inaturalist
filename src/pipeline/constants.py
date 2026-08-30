@@ -42,6 +42,8 @@ ABS_VS_OBS_REPORTS = (
     ("abs-vs-obs-observation-counts.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_observation_counts.sql"),
     ("abs-vs-obs-observations-by-day.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_observations_by_day.sql"),
     ("abs-vs-obs-species-reported-by-month.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_species_reported_by_month.sql"),
+    ("abs-vs-obs-active-observers.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_active_observers.sql"),
+    ("abs-vs-obs-observers-by-month.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_observers_by_month.sql"),
     ("abs-vs-obs-duplicate-observations.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_duplicate_observations.sql"),
     ("abs-vs-obs-quality-grades.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_quality_grades.sql"),
 )

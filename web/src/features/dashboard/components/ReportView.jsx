@@ -1,4 +1,5 @@
 import DownloadCsvButton from "../../../components/actions/DownloadCsvButton";
+import InfoTooltip from "../../../components/feedback/InfoTooltip";
 import DataTable from "../../../components/visualizations/DataTable";
 import GroupedBarChart from "../../../components/visualizations/GroupedBarChart";
 import PieChart from "../../../components/visualizations/PieChart";
@@ -19,8 +20,8 @@ export default function ReportView({ csvContents, report }) {
 
   return (
     <>
-      <div className="report-heading"><h3>{report.label}</h3><div className="report-downloads">{downloads.map((download) => <DownloadCsvButton csvContent={download.csvContent} fileName={download.fileName} key={download.fileName} label={download.label} />)}</div></div>
-      {pieChartSlices ? <PieChart ariaLabel={report.visualization.ariaLabel} slices={pieChartSlices} summaryItems={summaryItems} total={pieChartTotal} totalLabel={report.visualization.totalLabel} valueLabel={report.visualization.valueLabel} /> : groupedBarChartData ? <GroupedBarChart ariaLabel={report.visualization.ariaLabel} categories={groupedBarChartData.categories} series={groupedBarChartData.series} total={groupedBarChartTotal} totalLabel={report.visualization.totalLabel} totalSeriesId={report.visualization.totalSeriesId} valueLabel={report.visualization.valueLabel} /> : timeSeriesData ? <TimeSeriesChart allowedGroupings={report.visualization.allowedGroupings} ariaLabel={report.visualization.ariaLabel} defaultGrouping={report.visualization.defaultGrouping} defaultRangePreset={report.visualization.defaultRangePreset} key={report.id} measures={timeSeriesMeasures} records={timeSeriesData.records} series={timeSeriesData.series} valueLabel={report.visualization.valueLabel} /> : <DataTable columns={columns ?? []} rows={rows} />}
+      <div className="report-heading"><h3>{report.label}{report.infoText && <InfoTooltip label={`More information about ${report.label}`}>{report.infoText}</InfoTooltip>}</h3><div className="report-downloads">{downloads.map((download) => <DownloadCsvButton csvContent={download.csvContent} fileName={download.fileName} key={download.fileName} label={download.label} />)}</div></div>
+      {pieChartSlices ? <PieChart ariaLabel={report.visualization.ariaLabel} slices={pieChartSlices} summaryItems={summaryItems} total={pieChartTotal} totalLabel={report.visualization.totalLabel} valueLabel={report.visualization.valueLabel} /> : groupedBarChartData ? <GroupedBarChart ariaLabel={report.visualization.ariaLabel} categories={groupedBarChartData.categories} series={groupedBarChartData.series} seriesSummaryLabel={report.visualization.seriesSummaryLabel} seriesSummaryValueLabel={report.visualization.seriesSummaryValueLabel} total={groupedBarChartTotal} totalLabel={report.visualization.totalLabel} totalSeriesId={report.visualization.totalSeriesId} valueLabel={report.visualization.valueLabel} /> : timeSeriesData ? <TimeSeriesChart allowedGroupings={report.visualization.allowedGroupings} ariaLabel={report.visualization.ariaLabel} defaultGrouping={report.visualization.defaultGrouping} defaultRangePreset={report.visualization.defaultRangePreset} key={report.id} measures={timeSeriesMeasures} records={timeSeriesData.records} series={timeSeriesData.series} valueLabel={report.visualization.valueLabel} /> : <DataTable columns={columns ?? []} rows={rows} />}
     </>
   );
 }

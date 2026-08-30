@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import DashboardSidebar from "./features/dashboard/components/DashboardSidebar";
 import ReportView from "./features/dashboard/components/ReportView";
-import { DASHBOARD_SECTIONS, OSA_STATS_DATA_FILES, OSA_STATS_REPORTS } from "./features/dashboard/config";
+import { DASHBOARD_REPORT_CATEGORIES, DASHBOARD_SECTIONS, OSA_STATS_DATA_FILES, OSA_STATS_REPORTS } from "./features/dashboard/config";
 import { useDashboardReports } from "./features/dashboard/hooks/useDashboardReports";
 
 export default function App() {
@@ -14,7 +14,7 @@ export default function App() {
 
   return (
     <div className="dashboard-layout">
-      <DashboardSidebar activeReportId={activeReportId} activeSectionId={activeSectionId} reports={OSA_STATS_REPORTS} sections={DASHBOARD_SECTIONS} setActiveReportId={setActiveReportId} setActiveSectionId={setActiveSectionId} />
+      <DashboardSidebar activeReportId={activeReportId} activeSectionId={activeSectionId} reportCategories={DASHBOARD_REPORT_CATEGORIES} reports={OSA_STATS_REPORTS} sections={DASHBOARD_SECTIONS} setActiveReportId={setActiveReportId} setActiveSectionId={setActiveSectionId} />
       <main className="content">
         <p className="eyebrow">Dashboard</p>
         <h2>{activeSection.label}</h2>

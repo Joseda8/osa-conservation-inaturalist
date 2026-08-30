@@ -193,6 +193,21 @@ button {
   outline: none;
 }
 
+.sidebar-report-category {
+  color: #8fd3a8;
+  display: grid;
+  font-size: 0.78rem;
+  font-weight: 700;
+  gap: 0.25rem;
+  letter-spacing: 0.04em;
+  margin: 0.55rem 0 0;
+  text-transform: uppercase;
+}
+
+.sidebar-report-category > .sidebar-report-navigation-item {
+  padding-left: 0.75rem;
+}
+
 .content h3 {
   font-size: 1.25rem;
   margin: 0 0 0.75rem;
@@ -207,7 +222,57 @@ button {
 }
 
 .report-heading h3 {
+  align-items: center;
+  display: flex;
+  gap: 0.45rem;
   margin: 0;
+}
+
+.info-tooltip {
+  display: inline-flex;
+  position: relative;
+}
+
+.info-tooltip-button {
+  align-items: center;
+  background: #edf7ef;
+  border: 1px solid #2d6e55;
+  border-radius: 50%;
+  color: #164637;
+  cursor: help;
+  display: inline-flex;
+  font-family: Georgia, serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  height: 1.3rem;
+  justify-content: center;
+  padding: 0;
+  width: 1.3rem;
+}
+
+.info-tooltip-content {
+  background: #164637;
+  border-radius: 0.4rem;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 400;
+  left: 0;
+  line-height: 1.4;
+  opacity: 0;
+  padding: 0.65rem 0.75rem;
+  pointer-events: none;
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  transform: translateY(-0.2rem);
+  transition: opacity 140ms ease, transform 140ms ease;
+  width: min(18rem, 70vw);
+  z-index: 1;
+}
+
+.info-tooltip:hover .info-tooltip-content,
+.info-tooltip:focus-within .info-tooltip-content {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .report-downloads {

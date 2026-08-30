@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import SeriesSelector from "./SeriesSelector";
 
-export default function GroupedBarChart({ ariaLabel, categories, series, total = null, totalLabel, totalSeriesId = null, valueLabel }) {
+export default function GroupedBarChart({ ariaLabel, categories, series, seriesSummaryLabel = "total", seriesSummaryValueLabel = valueLabel, total = null, totalLabel, totalSeriesId = null, valueLabel }) {
   const [activeBar, setActiveBar] = useState(null);
   const [selectedSeriesIds, setSelectedSeriesIds] = useState(() => series.map((seriesItem) => seriesItem.id));
   const visibleSeries = series.map((seriesItem, seriesIndex) => ({ ...seriesItem, seriesIndex })).filter((seriesItem) => selectedSeriesIds.includes(seriesItem.id));
@@ -22,7 +22,7 @@ export default function GroupedBarChart({ ariaLabel, categories, series, total =
     <section aria-label={ariaLabel} className="grouped-bar-chart">
       <SeriesSelector items={series} onToggle={toggleSeries} selectedItemIds={selectedSeriesIds} />
       <div className="grouped-bar-chart-plot">
-        <div className="bar-chart-totals">{total !== null && (totalSeriesId === null || selectedSeriesIds.includes(totalSeriesId)) && <span className="bar-chart-total"><span>{totalLabel}</span><strong>{total.toLocaleString()}</strong></span>}{visibleSeries.filter((seriesItem) => seriesItem.total !== null).map((seriesItem) => <span key={seriesItem.label}><span className="legend-swatch" style={{ backgroundColor: seriesItem.color }} />{seriesItem.label} total: <strong>{seriesItem.total.toLocaleString()}</strong></span>)}</div>
+        <div className="bar-chart-totals">{total !== null && (totalSeriesId === null || selectedSeriesIds.includes(totalSeriesId)) && <span className="bar-chart-total"><span>{totalLabel}</span><strong>{total.toLocaleString()}</strong></span>}{visibleSeries.filter((seriesItem) => seriesItem.total !== null).map((seriesItem) => <span key={seriesItem.label}><span className="legend-swatch" style={{ backgroundColor: seriesItem.color }} />{seriesItem.label} {seriesSummaryLabel}: <strong>{seriesItem.total.toLocaleString()} {seriesSummaryValueLabel}</strong></span>)}</div>
         <div className="grouped-bar-chart-bars">{categories.map((category, categoryIndex) => <div className="bar-group" key={category.label}><div className="bar-group-bars">{visibleSeries.map((seriesItem) => {
           const bar = category.bars[seriesItem.seriesIndex];
           const height = `${(bar.value / maximumValue) * 100}%`;
