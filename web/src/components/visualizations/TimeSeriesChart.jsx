@@ -8,7 +8,7 @@ const CHART_PADDING = { bottom: 48, left: 54, right: 18, top: 18 };
 // Radius of the selected data-point marker in SVG units.
 const ACTIVE_POINT_RADIUS = 5;
 const DEFAULT_RANGE_DAYS = 7;
-const RANGE_PRESETS = [{ days: 7, id: "last-7", label: "Last 7 days" }, { days: 30, id: "last-30", label: "Last 30 days" }, { days: 90, id: "last-90", label: "Last 90 days" }, { id: "all", label: "All time" }];
+const RANGE_PRESETS = [{ days: 7, id: "last-7", label: "Last 7 days" }, { days: 30, id: "last-30", label: "Last 30 days" }, { days: 90, id: "last-90", label: "Last 90 days" }, { days: 365, id: "last-year", label: "Last year" }, { id: "all", label: "All time" }];
 const TIME_GROUPS = [{ id: "day", label: "Day" }, { id: "week", label: "Week" }, { id: "month", label: "Month" }, { id: "year", label: "Year" }];
 const VISIBLE_X_AXIS_LABEL_COUNT = 6;
 const Y_AXIS_LINE_COUNT = 4;
@@ -175,6 +175,8 @@ export default function TimeSeriesChart({ ariaLabel, defaultGrouping = "day", de
     setEndDate(latestDate);
     if (preset.id === "all") {
       setGrouping("year");
+    } else if (preset.days > 31 && grouping === "day") {
+      setGrouping("month");
     }
     setActivePoint(null);
   }
