@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import SeriesSelector from "./SeriesSelector";
 
-export default function GroupedBarChart({ ariaLabel, categories, series, seriesSummaryLabel = "total", seriesSummaryValueLabel = valueLabel, total = null, totalLabel, totalSeriesId = null, valueLabel }) {
+export default function GroupedBarChart({ ariaLabel, categories, series, total = null, totalLabel, totalSeriesId = null, valueLabel, seriesSummaryLabel = "total", seriesSummaryValueLabel = valueLabel }) {
   const [activeBar, setActiveBar] = useState(null);
   const [selectedSeriesIds, setSelectedSeriesIds] = useState(() => series.map((seriesItem) => seriesItem.id));
   const visibleSeries = series.map((seriesItem, seriesIndex) => ({ ...seriesItem, seriesIndex })).filter((seriesItem) => selectedSeriesIds.includes(seriesItem.id));
