@@ -39,13 +39,13 @@ DATA_UPDATE_PIPELINE_STEP_NAMES = ("download-raw-data", "download-trends", "load
 
 # CSV reports generated from the ABS and OBS observation data.
 ABS_VS_OBS_REPORTS = (
-    ("abs-vs-obs-observation-counts.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_observation_counts.sql"),
-    ("abs-vs-obs-observations-by-day.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_observations_by_day.sql"),
+    ("abs-vs-obs-observation-counts.csv", Path("db") / "queries" / "dashboard" / "observation_stats" / "abs_vs_obs_observation_counts.sql"),
+    ("abs-vs-obs-observations-by-day.csv", Path("db") / "queries" / "dashboard" / "observation_stats" / "abs_vs_obs_observations_by_day.sql"),
     ("abs-vs-obs-species-reported-by-month.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_species_reported_by_month.sql"),
-    ("abs-vs-obs-active-observers.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_active_observers.sql"),
-    ("abs-vs-obs-observers-by-month.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_observers_by_month.sql"),
-    ("abs-vs-obs-duplicate-observations.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_duplicate_observations.sql"),
-    ("abs-vs-obs-quality-grades.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_quality_grades.sql"),
+    ("abs-vs-obs-active-observers.csv", Path("db") / "queries" / "dashboard" / "observer_stats" / "abs_vs_obs_active_observers.sql"),
+    ("abs-vs-obs-observers-by-month.csv", Path("db") / "queries" / "dashboard" / "observer_stats" / "abs_vs_obs_observers_by_month.sql"),
+    ("abs-vs-obs-duplicate-observations.csv", Path("db") / "queries" / "dashboard" / "observation_stats" / "abs_vs_obs_duplicate_observations.sql"),
+    ("abs-vs-obs-quality-grades.csv", Path("db") / "queries" / "dashboard" / "observation_stats" / "abs_vs_obs_quality_grades.sql"),
 )
 
 # Root folder for locally generated dashboard CSV reports.
