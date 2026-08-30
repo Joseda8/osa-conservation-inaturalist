@@ -119,8 +119,14 @@ function getTickIndexes(pointCount) {
   return Array.from({ length: VISIBLE_X_AXIS_LABEL_COUNT }, (_, index) => Math.round((index * (pointCount - 1)) / (VISIBLE_X_AXIS_LABEL_COUNT - 1)));
 }
 
-export default function TimeSeriesChart({ ariaLabel, defaultGrouping = "day", defaultRangePreset = "last-7", records, series, valueLabel }) {
-  const dates = records.map((record) => record.date).sort();
+export default function TimeSeriesChart({ allowedGroupings, ariaLabel, defaultGrouping = "day", defaultRangePreset = "last-7", measures = [], records, series, valueLabel }) {
+  const [selectedMeasureId, setSelectedMeasureId] = useState(() => measures[0]?.id ?? null);
+  const selectedMeasure = measures.find((measure) => measure.id === selectedMeasureId);
+  const activeRecords = selectedMeasure?.records ?? records;
+  const activeSeries = selectedMeasure?.series ?? series;
+  const activeValueLabel = selectedMeasure?.valueLabel ?? valueLabel;
+  const valueAggregation = selectedMeasure?.valueAggregation ?? "sum";
+  const dates = activeRecords.map((record) => record.date).sort();
   const earliestDate = dates[0];
   const latestDate = dates[dates.length - 1];
   const defaultLatestDate = latestDate ?? "1970-01-01";
@@ -133,8 +139,8 @@ export default function TimeSeriesChart({ ariaLabel, defaultGrouping = "day", de
   const [pendingStartDate, setPendingStartDate] = useState(() => formatDateInput(defaultStartDate));
   const [pendingEndDate, setPendingEndDate] = useState(() => formatDateInput(defaultLatestDate));
   const [activePoint, setActivePoint] = useState(null);
-  const [selectedSeriesIds, setSelectedSeriesIds] = useState(() => series.map((seriesItem) => seriesItem.id));
-  const visibleSeries = useMemo(() => series.filter((seriesItem) => selectedSeriesIds.includes(seriesItem.id)), [selectedSeriesIds, series]);
+  const [selectedSeriesIds, setSelectedSeriesIds] = useState(() => activeSeries.map((seriesItem) => seriesItem.id));
+  const visibleSeries = useMemo(() => activeSeries.filter((seriesItem) => selectedSeriesIds.includes(seriesItem.id)), [activeSeries, selectedSeriesIds]);
   const chartWidth = 720;
   const plotWidth = chartWidth - CHART_PADDING.left - CHART_PADDING.right;
   const plotHeight = CHART_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom;
@@ -145,13 +151,13 @@ export default function TimeSeriesChart({ ariaLabel, defaultGrouping = "day", de
     }
     const periodKeys = getPeriodKeys(startDate, endDate, grouping);
     const valuesByPeriodAndSeries = new Map(periodKeys.map((periodKey) => [periodKey, new Map()]));
-    records.filter((record) => record.date >= startDate && record.date <= endDate).forEach((record) => {
+    activeRecords.filter((record) => record.date >= startDate && record.date <= endDate).forEach((record) => {
       const periodKey = getPeriodKey(record.date, grouping);
       const periodValues = valuesByPeriodAndSeries.get(periodKey);
-      periodValues.set(record.series, (periodValues.get(record.series) ?? 0) + record.value);
+      periodValues.set(record.series, valueAggregation === "latest" ? record.value : (periodValues.get(record.series) ?? 0) + record.value);
     });
     return periodKeys.map((periodKey) => ({ label: formatPeriodLabel(periodKey, grouping), periodKey, values: visibleSeries.map((seriesItem) => valuesByPeriodAndSeries.get(periodKey).get(seriesItem.id) ?? 0) }));
-  }, [endDate, grouping, records, startDate, visibleSeries]);
+  }, [activeRecords, endDate, grouping, startDate, valueAggregation, visibleSeries]);
 
   const maximumValue = useMemo(() => Math.max(...chartData.flatMap((point) => point.values), 0), [chartData]);
   const scaleMaximumValue = Math.max(maximumValue, 1);
@@ -236,14 +242,15 @@ export default function TimeSeriesChart({ ariaLabel, defaultGrouping = "day", de
   const isAppliedDailyRangeTooLong = endDate > addMonths(startDate, MAXIMUM_DAILY_RANGE_MONTHS);
   const rangeErrorMessage = !pendingStartDate || !pendingEndDate ? "Choose both a start date and an end date." : !pendingStartDateIso || !pendingEndDateIso ? "Use the DD-MM-YYYY date format." : pendingStartDateIso > pendingEndDateIso ? "Choose an end date on or after the start date." : isPendingDailyRangeTooLong ? "Day grouping is limited to six months. Choose another grouping or a shorter range." : null;
   const timeSeriesControls = <div className="time-series-controls">
+    {measures.length > 1 && <div className="time-series-control-group"><span>Measure</span><div className="time-series-button-group">{measures.map((measure) => <button aria-pressed={selectedMeasureId === measure.id} className={selectedMeasureId === measure.id ? "time-series-control active" : "time-series-control"} key={measure.id} onClick={() => { setSelectedMeasureId(measure.id); setActivePoint(null); }} type="button">{measure.label}</button>)}</div></div>}
     <div className="time-series-control-group"><span>Range</span><div className="time-series-button-group">{RANGE_PRESETS.map((preset) => <button aria-pressed={rangePreset === preset.id} className={rangePreset === preset.id ? "time-series-control active" : "time-series-control"} key={preset.id} onClick={() => selectRange(preset)} type="button">{preset.label}</button>)}</div></div>
-    <div className="time-series-control-group"><span>Group by</span><div className="time-series-button-group">{TIME_GROUPS.map((timeGroup) => <button aria-pressed={grouping === timeGroup.id} className={grouping === timeGroup.id ? "time-series-control active" : "time-series-control"} disabled={(isAllTimeRange && timeGroup.id !== "year") || (timeGroup.id === "day" && isAppliedDailyRangeTooLong)} key={timeGroup.id} onClick={() => { setGrouping(timeGroup.id); setActivePoint(null); }} title={timeGroup.id === "day" && isAppliedDailyRangeTooLong ? "Day grouping is limited to six months" : undefined} type="button">{timeGroup.label}</button>)}</div></div>
+    <div className="time-series-control-group"><span>Group by</span><div className="time-series-button-group">{TIME_GROUPS.filter((timeGroup) => !allowedGroupings || allowedGroupings.includes(timeGroup.id)).map((timeGroup) => <button aria-pressed={grouping === timeGroup.id} className={grouping === timeGroup.id ? "time-series-control active" : "time-series-control"} disabled={(isAllTimeRange && timeGroup.id !== "year") || (timeGroup.id === "day" && isAppliedDailyRangeTooLong)} key={timeGroup.id} onClick={() => { setGrouping(timeGroup.id); setActivePoint(null); }} title={timeGroup.id === "day" && isAppliedDailyRangeTooLong ? "Day grouping is limited to six months" : undefined} type="button">{timeGroup.label}</button>)}</div></div>
     <div className="time-series-date-range"><label>From<input inputMode="numeric" maxLength="10" onChange={(event) => updateStartDate(event.target.value)} placeholder="DD-MM-YYYY" type="text" value={pendingStartDate} /></label><label>To<input inputMode="numeric" maxLength="10" onChange={(event) => updateEndDate(event.target.value)} placeholder="DD-MM-YYYY" type="text" value={pendingEndDate} /></label><button aria-label="Refresh graph" className="time-series-refresh" disabled={rangeErrorMessage !== null} onClick={refreshDateRange} title="Refresh graph" type="button">↻</button></div>
   </div>;
 
   return (
     <section aria-label={ariaLabel} className="time-series-chart">
-      <SeriesSelector items={series} onToggle={toggleSeries} selectedItemIds={selectedSeriesIds} />
+      <SeriesSelector items={activeSeries} onToggle={toggleSeries} selectedItemIds={selectedSeriesIds} />
       {timeSeriesControls}
       {rangeErrorMessage && <p className="time-series-range-validation">{rangeErrorMessage}</p>}
       <div className="time-series-plot-scroll"><div aria-label={`${ariaLabel}. Hover to inspect a date, or use the left and right arrow keys.`} className="time-series-plot" onFocus={() => setActivePoint((currentPoint) => currentPoint ?? { pointIndex: 0, seriesIndex: 0 })} onKeyDown={selectPointByKeyboard} onMouseLeave={() => setActivePoint(null)} onMouseMove={(event) => selectPointByPointerPosition(event.clientX, event.clientY, event.currentTarget)} role="group" tabIndex={0}><svg aria-hidden="true" viewBox={`0 0 ${chartWidth} ${CHART_HEIGHT}`}>{Array.from({ length: Y_AXIS_LINE_COUNT }, (_, lineIndex) => {
@@ -254,7 +261,7 @@ export default function TimeSeriesChart({ ariaLabel, defaultGrouping = "day", de
         const x = getPointX(pointIndex);
         return <text className="time-series-axis-label" key={chartData[pointIndex].periodKey} textAnchor="middle" x={x} y={CHART_HEIGHT - 14}>{chartData[pointIndex].label}</text>;
       })}</svg></div></div>
-      <div className="time-series-details"><div><p className="chart-hint">Hover over the chart for an exact count, or use its arrow keys.</p><div aria-live="polite" className={selectedPoint ? "chart-tooltip time-series-tooltip active" : "chart-tooltip time-series-tooltip"}>{selectedPoint && <><strong>{selectedPoint.label} · {visibleSeries[activePoint.seriesIndex].label}</strong><span>{selectedPoint.values[activePoint.seriesIndex].toLocaleString()} {valueLabel}</span></>}</div></div><ul className="chart-legend">{visibleSeries.map((seriesItem) => <li key={seriesItem.id}><span className="legend-swatch" style={{ backgroundColor: seriesItem.color }} /><span>{seriesItem.label}</span></li>)}</ul></div>
+      <div className="time-series-details"><div><p className="chart-hint">Hover over the chart for an exact count, or use its arrow keys.</p><div aria-live="polite" className={selectedPoint ? "chart-tooltip time-series-tooltip active" : "chart-tooltip time-series-tooltip"}>{selectedPoint && <><strong>{selectedPoint.label} · {visibleSeries[activePoint.seriesIndex].label}</strong><span>{selectedPoint.values[activePoint.seriesIndex].toLocaleString()} {activeValueLabel}</span></>}</div></div><ul className="chart-legend">{visibleSeries.map((seriesItem) => <li key={seriesItem.id}><span className="legend-swatch" style={{ backgroundColor: seriesItem.color }} /><span>{seriesItem.label}</span></li>)}</ul></div>
     </section>
   );
 }
