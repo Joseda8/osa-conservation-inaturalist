@@ -302,6 +302,15 @@ button {
   padding: 0.8rem;
 }
 
+.chart-tooltip.time-series-tooltip {
+  background: transparent;
+  transition: background-color 160ms ease;
+}
+
+.chart-tooltip.time-series-tooltip.active {
+  background: #edf7ef;
+}
+
 .chart-legend {
   display: grid;
   gap: 0.65rem;

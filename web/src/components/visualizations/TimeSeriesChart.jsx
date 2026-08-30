@@ -252,7 +252,7 @@ export default function TimeSeriesChart({ ariaLabel, defaultGrouping = "day", de
         const x = getPointX(pointIndex);
         return <text className="time-series-axis-label" key={chartData[pointIndex].periodKey} textAnchor="middle" x={x} y={CHART_HEIGHT - 14}>{chartData[pointIndex].label}</text>;
       })}</svg></div></div>
-      <div className="time-series-details"><div><p className="chart-hint">Hover over the chart for an exact count, or use its arrow keys.</p>{selectedPoint && <div className="chart-tooltip"><strong>{selectedPoint.label} · {visibleSeries[activePoint.seriesIndex].label}</strong><span>{selectedPoint.values[activePoint.seriesIndex].toLocaleString()} {valueLabel}</span></div>}</div><ul className="chart-legend">{visibleSeries.map((seriesItem) => <li key={seriesItem.id}><span className="legend-swatch" style={{ backgroundColor: seriesItem.color }} /><span>{seriesItem.label}</span></li>)}</ul></div>
+      <div className="time-series-details"><div><p className="chart-hint">Hover over the chart for an exact count, or use its arrow keys.</p><div aria-live="polite" className={selectedPoint ? "chart-tooltip time-series-tooltip active" : "chart-tooltip time-series-tooltip"}>{selectedPoint && <><strong>{selectedPoint.label} · {visibleSeries[activePoint.seriesIndex].label}</strong><span>{selectedPoint.values[activePoint.seriesIndex].toLocaleString()} {valueLabel}</span></>}</div></div><ul className="chart-legend">{visibleSeries.map((seriesItem) => <li key={seriesItem.id}><span className="legend-swatch" style={{ backgroundColor: seriesItem.color }} /><span>{seriesItem.label}</span></li>)}</ul></div>
     </section>
   );
 }
