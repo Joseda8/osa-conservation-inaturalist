@@ -1,0 +1,43 @@
+:root {
+  /* OSA brand colors. */
+  --color-brand-dark: #164637;
+  --color-brand-primary: #2d6e55;
+  --color-brand-light: #8fd3a8;
+
+  /* Data visualizations. */
+  --color-data-aggregated: #d29c2b;
+  --bar-color-1: var(--color-brand-primary);
+  --bar-color-2: var(--color-brand-light);
+  --bar-color-3: var(--color-data-aggregated);
+  --pie-color-1: var(--color-brand-primary);
+  --pie-color-2: var(--color-brand-light);
+
+  /* Text. */
+  --color-text-primary: #1d2a25;
+  --color-text-secondary: #365246;
+  --color-text-muted: #5b6d64;
+  --color-text-inverse: #fff;
+  --color-text-sidebar-muted: #d5e4d8;
+
+  /* Surfaces. */
+  --color-surface-page: #f4f7f2;
+  --color-surface-raised: #fff;
+  --color-surface-pale: #f5f8f2;
+  --color-surface-selected: #f1f6f1;
+  --color-surface-subtle: #edf7ef;
+  --color-surface-gradient-start: #f7fbf7;
+
+  /* Borders, focus, and elevation. */
+  --color-border: #dce5de;
+  --color-border-strong: #cddbd0;
+  --color-border-subtle: #e5ebe6;
+  --color-focus: #93d6a8;
+  --color-focus-soft: #b9e4c9;
+  --color-sidebar-border: rgb(245 248 242 / 30%);
+  --color-shadow: rgb(22 70 55 / 7%);
+
+  /* Validation. */
+  --color-error: #9a331e;
+  --color-error-border: #d8a6a1;
+  --color-error-text: #8d3028;
+}
