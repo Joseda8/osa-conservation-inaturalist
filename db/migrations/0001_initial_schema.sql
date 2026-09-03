@@ -27,6 +27,21 @@ CREATE TABLE taxa (
     loaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE taxon_conservation_statuses (
+    conservation_status_id BIGINT PRIMARY KEY,
+    taxon_id BIGINT NOT NULL REFERENCES taxa(taxon_id),
+    place_id BIGINT,
+    source_id BIGINT,
+    user_id BIGINT,
+    authority TEXT,
+    status TEXT,
+    status_name TEXT,
+    geoprivacy TEXT,
+    iucn INTEGER,
+    loaded_from TEXT NOT NULL,
+    loaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE observers (
     observer_id BIGINT PRIMARY KEY,
     login TEXT,
@@ -140,6 +155,12 @@ CREATE INDEX idx_observations_latitude_longitude
 
 CREATE INDEX idx_taxa_iconic_taxon_name
     ON taxa(iconic_taxon_name);
+
+CREATE INDEX idx_taxon_conservation_statuses_taxon_id
+    ON taxon_conservation_statuses(taxon_id);
+
+CREATE INDEX idx_taxon_conservation_statuses_status
+    ON taxon_conservation_statuses(status);
 
 CREATE INDEX idx_trends_metric_period
     ON trends(metric_name, period_type, period_start, period_end);

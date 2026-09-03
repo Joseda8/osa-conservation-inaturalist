@@ -9,7 +9,7 @@ from typing import Any
 from psycopg import Connection
 from psycopg.types.json import Jsonb
 
-from .constants import SELECT_ALL_TAXON_IDS_QUERY_PATH, SELECT_MISSING_LINEAGE_TAXON_IDS_QUERY_PATH, UPSERT_TAXON_QUERY_PATH
+from .constants import SELECT_ALL_TAXON_IDS_QUERY_PATH, SELECT_MISSING_LINEAGE_TAXON_IDS_QUERY_PATH, UPSERT_TAXON_CONSERVATION_STATUS_QUERY_PATH, UPSERT_TAXON_QUERY_PATH
 from .query_loader import load_sql_query
 
 class TaxonRepository:
@@ -70,4 +70,32 @@ class TaxonRepository:
                     loaded_from,
                 ),
             )
+            self._upsert_conservation_statuses(taxon_json, loaded_from)
         return len(taxon_json_rows)
+
+    def _upsert_conservation_statuses(self, taxon_json: dict[str, Any], loaded_from: str):
+        """Store every conservation status returned for one taxon without interpretation.
+
+        @param taxon_json iNaturalist taxon payload.
+        @param loaded_from Source that supplied the taxon payload.
+        """
+        conservation_statuses = [taxon_json.get("conservation_status"), *(taxon_json.get("conservation_statuses") or [])]
+        for conservation_status in conservation_statuses:
+            if not isinstance(conservation_status, dict) or conservation_status.get("id") is None:
+                continue
+            self._database_connection.execute(
+                load_sql_query(UPSERT_TAXON_CONSERVATION_STATUS_QUERY_PATH),
+                (
+                    conservation_status["id"],
+                    taxon_json["id"],
+                    conservation_status.get("place_id"),
+                    conservation_status.get("source_id"),
+                    conservation_status.get("user_id"),
+                    conservation_status.get("authority"),
+                    conservation_status.get("status"),
+                    conservation_status.get("status_name"),
+                    conservation_status.get("geoprivacy"),
+                    conservation_status.get("iucn"),
+                    loaded_from,
+                ),
+            )

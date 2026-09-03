@@ -4,6 +4,8 @@
 @brief Defines targeted observation fields for analysis-oriented downloads.
 """
 
+from .taxon_fields import TAXON_ENRICHMENT_FIELDS
+
 
 # Observation fields needed for biodiversity baseline and iNaturalist research summaries.
 OBSERVATION_ANALYSIS_FIELDS = {
@@ -29,23 +31,7 @@ OBSERVATION_ANALYSIS_FIELDS = {
     "identifications_count": True,
     "num_identification_agreements": True,
     "num_identification_disagreements": True,
-    "taxon": {
-        "id": True,
-        "name": True,
-        "preferred_common_name": True,
-        "rank": True,
-        "rank_level": True,
-        "parent_id": True,
-        "ancestor_ids": True,
-        "iconic_taxon_id": True,
-        "iconic_taxon_name": True,
-        "is_active": True,
-        "native": True,
-        "introduced": True,
-        "endemic": True,
-        "threatened": True,
-        "extinct": True,
-    },
+    "taxon": TAXON_ENRICHMENT_FIELDS,
     "user": {
         "id": True,
         "login": True,
