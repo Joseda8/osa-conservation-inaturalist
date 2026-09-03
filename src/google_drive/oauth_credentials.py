@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 
 from google.auth.transport.requests import Request
+from google.auth.exceptions import RefreshError
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
@@ -52,7 +53,10 @@ class GoogleDriveOAuthCredentials:
         """
         credentials = cls._load_credentials()
         if credentials and credentials.expired and credentials.refresh_token:
-            credentials.refresh(Request())
+            try:
+                credentials.refresh(Request())
+            except RefreshError:
+                return None
         return credentials if credentials and credentials.valid else None
 
     @staticmethod
