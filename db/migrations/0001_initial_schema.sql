@@ -43,7 +43,9 @@ CREATE TABLE observations (
     observation_id BIGINT NOT NULL,
     quality_grade TEXT,
     species_guess TEXT,
+    -- Calendar date parsed from iNaturalist's observed_on field.
     observed_on DATE,
+    -- Time parsed from observed_on when supplied.
     observed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ,
     updated_at TIMESTAMPTZ,

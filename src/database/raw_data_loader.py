@@ -238,6 +238,7 @@ class RawDataLoader:
         @param load_counts Processed row counts by table.
         """
         latitude, longitude = self._get_latitude_longitude(observation_json)
+        observed_on, observed_at = self._get_observed_date_time(observation_json)
         self._database_connection.execute(
             load_sql_query(UPSERT_OBSERVATION_QUERY_PATH),
             (
@@ -246,8 +247,8 @@ class RawDataLoader:
                 observation_json["id"],
                 observation_json.get("quality_grade"),
                 observation_json.get("species_guess"),
-                observation_json.get("observed_on"),
-                observation_json.get("time_observed_at"),
+                observed_on,
+                observed_at,
                 observation_json.get("created_at"),
                 observation_json.get("updated_at"),
                 longitude,
@@ -273,6 +274,35 @@ class RawDataLoader:
             ),
         )
         load_counts["observations"] += 1
+
+    @staticmethod
+    def _get_observed_date_time(observation_json: dict[str, Any]) -> tuple[date | None, datetime | None]:
+        """Parse iNaturalist's mixed-precision observation date field.
+
+        iNaturalist's observed_on can contain a date alone or a timestamp with its UTC offset.
+        Preserve the date in every case and preserve the timestamp when the source supplies one.
+
+        @param observation_json iNaturalist observation payload.
+        @return Observation calendar date and optional timestamp.
+        """
+        observed_on_value = observation_json.get("observed_on")
+        if observed_on_value is None:
+            return None, None
+
+        observed_on_text = str(observed_on_value)
+        observed_date = date.fromisoformat(observed_on_text[:10])
+        if len(observed_on_text) == len("YYYY-MM-DD"):
+            return observed_date, None
+        return observed_date, RawDataLoader._parse_observed_timestamp(observed_on_text)
+
+    @staticmethod
+    def _parse_observed_timestamp(value: Any) -> datetime | None:
+        """Parse one optional iNaturalist timestamp.
+
+        @param value Timestamp value returned by iNaturalist.
+        @return Parsed timestamp, or None when no time was recorded.
+        """
+        return datetime.fromisoformat(str(value)) if value is not None else None
 
     def _load_observation_photos(
         self,

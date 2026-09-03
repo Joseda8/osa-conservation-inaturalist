@@ -45,7 +45,7 @@ from .constants import (
     TREND_COUNT_PER_PAGE,
     TREND_TAXON_FIELDS,
 )
-from .observation_fields import OBSERVATION_ANALYSIS_FIELDS, TIME_OBSERVED_AT_FIELD_NAME
+from .observation_fields import OBSERVATION_ANALYSIS_FIELDS
 from .project_config import ProjectConfig
 from .project_download_summary import ProjectDownloadSummary
 from .storage import JsonFileStorage
@@ -514,10 +514,6 @@ class InaturalistClient(JsonFileStorage):
             # An empty page means the cursor has passed the final matching observation.
             if not observation_results:
                 break
-
-            # iNaturalist may omit this field when its value is null.
-            for observation_result in observation_results:
-                observation_result.setdefault(TIME_OBSERVED_AT_FIELD_NAME, None)
 
             LOGGER.info("Downloaded page %s for project %s", current_page, project_config.alias)
             self._log_cache_status()

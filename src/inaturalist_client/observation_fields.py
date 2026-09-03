@@ -6,16 +6,11 @@
 
 
 # Observation fields needed for biodiversity baseline and iNaturalist research summaries.
-# iNaturalist observation timestamp field, which is null when the observer did not supply a time.
-TIME_OBSERVED_AT_FIELD_NAME = "time_observed_at"
-
-
 OBSERVATION_ANALYSIS_FIELDS = {
     "id": True,
     "quality_grade": True,
     "species_guess": True,
     "observed_on": True,
-    TIME_OBSERVED_AT_FIELD_NAME: True,
     "created_at": True,
     "updated_at": True,
     "geojson": True,

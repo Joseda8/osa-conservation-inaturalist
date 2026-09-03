@@ -6,7 +6,7 @@ WITH project_observations AS (
         observation_id,
         observer_id,
         created_at,
-        COALESCE(observed_at, observed_on::TIMESTAMPTZ) AS observed_at
+        COALESCE(observed_at, observed_on::TIMESTAMP AT TIME ZONE 'America/Costa_Rica') AS observed_at
     FROM observations
     WHERE project_alias IN ('abs', 'obs')
         AND observer_id IS NOT NULL
