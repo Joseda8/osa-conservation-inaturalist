@@ -46,7 +46,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Install frontend dependencies
-        run: npm ci --prefix web
+        run: npm ci --prefix web --no-audit --no-fund --prefer-offline
 
       - name: Configure GitHub Pages
         id: pages
