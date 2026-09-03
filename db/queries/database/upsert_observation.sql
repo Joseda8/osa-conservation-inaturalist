@@ -5,6 +5,7 @@ INSERT INTO observations (
     quality_grade,
     species_guess,
     observed_on,
+    observed_at,
     created_at,
     updated_at,
     longitude,
@@ -32,13 +33,14 @@ INSERT INTO observations (
 VALUES (
     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-    %s, %s, %s, %s, %s, %s, %s, %s, now()
+    %s, %s, %s, %s, %s, %s, %s, %s, %s, now()
 )
 ON CONFLICT (project_alias, observation_id) DO UPDATE SET
     download_date = EXCLUDED.download_date,
     quality_grade = EXCLUDED.quality_grade,
     species_guess = EXCLUDED.species_guess,
     observed_on = EXCLUDED.observed_on,
+    observed_at = EXCLUDED.observed_at,
     created_at = EXCLUDED.created_at,
     updated_at = EXCLUDED.updated_at,
     longitude = EXCLUDED.longitude,

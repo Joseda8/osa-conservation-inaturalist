@@ -247,6 +247,7 @@ class RawDataLoader:
                 observation_json.get("quality_grade"),
                 observation_json.get("species_guess"),
                 observation_json.get("observed_on"),
+                observation_json.get("time_observed_at"),
                 observation_json.get("created_at"),
                 observation_json.get("updated_at"),
                 longitude,

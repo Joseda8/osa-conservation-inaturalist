@@ -43,7 +43,8 @@ CREATE TABLE observations (
     observation_id BIGINT NOT NULL,
     quality_grade TEXT,
     species_guess TEXT,
-    observed_on TIMESTAMPTZ,
+    observed_on DATE,
+    observed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ,
     updated_at TIMESTAMPTZ,
     longitude DOUBLE PRECISION,
@@ -119,6 +120,9 @@ CREATE INDEX idx_observations_project_date
 
 CREATE INDEX idx_observations_observed_on
     ON observations(observed_on);
+
+CREATE INDEX idx_observations_observed_at
+    ON observations(observed_at);
 
 CREATE INDEX idx_observations_quality_grade
     ON observations(quality_grade);

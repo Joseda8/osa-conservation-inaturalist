@@ -6,7 +6,7 @@ WITH project_observations AS (
         observation_id,
         observer_id,
         created_at,
-        observed_on
+        COALESCE(observed_at, observed_on::TIMESTAMPTZ) AS observed_at
     FROM observations
     WHERE project_alias IN ('abs', 'obs')
         AND observer_id IS NOT NULL
@@ -16,20 +16,20 @@ all_project_observations AS (
         project_alias,
         observer_id,
         created_at,
-        observed_on
+        observed_at
     FROM project_observations
     UNION ALL
     SELECT
         project_alias,
         observer_id,
         created_at,
-        observed_on
+        observed_at
     FROM (
         SELECT DISTINCT ON (observation_id)
             'aggregated'::TEXT AS project_alias,
             observer_id,
             created_at,
-            observed_on
+            observed_at
         FROM project_observations
         ORDER BY
             observation_id,
@@ -41,8 +41,8 @@ observer_metrics AS (
         project_alias,
         observer_id,
         COALESCE(BOOL_OR(created_at >= CURRENT_TIMESTAMP - INTERVAL '1 year'), FALSE) AS is_active,
-        MIN(observed_on) AS first_observed_on,
-        MAX(observed_on) AS last_observed_on
+        MIN(observed_at) AS first_observed_at,
+        MAX(observed_at) AS last_observed_at
     FROM all_project_observations
     GROUP BY
         project_alias,
@@ -54,7 +54,7 @@ project_metrics AS (
         COUNT(*) AS total_observer_count,
         COUNT(*) FILTER (WHERE is_active) AS active_observer_count,
         COUNT(*) FILTER (WHERE NOT is_active) AS inactive_observer_count,
-        ROUND(AVG(EXTRACT(EPOCH FROM last_observed_on - first_observed_on) / 86400) FILTER (WHERE is_active), 1) AS average_active_observer_lifespan_days
+        ROUND(AVG(EXTRACT(EPOCH FROM last_observed_at - first_observed_at) / 86400) FILTER (WHERE is_active), 1) AS average_active_observer_lifespan_days
     FROM observer_metrics
     GROUP BY project_alias
 )

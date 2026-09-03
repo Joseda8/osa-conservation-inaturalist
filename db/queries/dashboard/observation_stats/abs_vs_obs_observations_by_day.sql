@@ -1,10 +1,10 @@
--- Counts observations by their Costa Rica observed date for each OSA project and both combined.
+-- Counts observations by their iNaturalist observed calendar date for each OSA project and both combined.
 
 WITH dated_project_observations AS (
     SELECT
         project_alias,
         observation_id,
-        (observed_on AT TIME ZONE 'America/Costa_Rica')::DATE AS observed_date
+        observed_on AS observed_date
     FROM observations
     WHERE project_alias IN ('abs', 'obs')
         AND observed_on IS NOT NULL

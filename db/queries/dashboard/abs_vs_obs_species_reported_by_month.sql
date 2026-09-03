@@ -5,7 +5,7 @@ WITH research_grade_species_observations AS (
     SELECT
         observations.project_alias,
         observations.observation_id,
-        DATE_TRUNC('month', observations.observed_on AT TIME ZONE 'America/Costa_Rica')::DATE AS period_start,
+        DATE_TRUNC('month', observations.observed_on)::DATE AS period_start,
         COALESCE(species_taxa.taxon_id, CASE WHEN observed_taxa.rank = 'species' THEN observed_taxa.taxon_id END) AS species_taxon_id
     FROM observations
     INNER JOIN taxa AS observed_taxa
