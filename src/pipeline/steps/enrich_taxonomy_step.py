@@ -57,6 +57,17 @@ class EnrichTaxonomyStep:
                 )
 
             with database_connection.transaction():
+                taxon_ids_missing_statuses = taxon_repository.get_taxon_ids_missing_conservation_statuses()
+            LOGGER.info("Found %s taxa without conservation-status enrichment", len(taxon_ids_missing_statuses))
+            self._enrich_taxon_ids(
+                taxon_ids_missing_statuses,
+                database_connection,
+                taxon_repository,
+                pipeline_context,
+                force_refresh=False,
+            )
+
+            with database_connection.transaction():
                 stored_taxon_count = len(taxon_repository.get_all_taxon_ids())
             LOGGER.info("Taxonomy enrichment complete with %s stored taxa", stored_taxon_count)
 
@@ -98,5 +109,6 @@ class EnrichTaxonomyStep:
                 stored_taxon_count = taxon_repository.upsert_taxa(
                     taxon_rows,
                     TAXON_API_SOURCE,
+                    include_conservation_statuses=True,
                 )
             LOGGER.info("Stored %s taxa from taxonomy batch %s/%s", stored_taxon_count, batch_number, total_batches)

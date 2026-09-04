@@ -35,8 +35,11 @@ UPSERT_TREND_QUERY_PATH = DATABASE_QUERIES_DIR / "upsert_trend.sql"
 # SQL query files used to store and enrich taxonomy.
 SELECT_ALL_TAXON_IDS_QUERY_PATH = DATABASE_QUERIES_DIR / "select_all_taxon_ids.sql"
 SELECT_MISSING_LINEAGE_TAXON_IDS_QUERY_PATH = DATABASE_QUERIES_DIR / "select_missing_lineage_taxon_ids.sql"
+SELECT_TAXON_IDS_MISSING_CONSERVATION_STATUSES_QUERY_PATH = DATABASE_QUERIES_DIR / "select_taxon_ids_missing_conservation_statuses.sql"
 UPSERT_TAXON_QUERY_PATH = DATABASE_QUERIES_DIR / "upsert_taxon.sql"
 UPSERT_TAXON_CONSERVATION_STATUS_QUERY_PATH = DATABASE_QUERIES_DIR / "upsert_taxon_conservation_status.sql"
+DELETE_TAXON_CONSERVATION_STATUSES_QUERY_PATH = DATABASE_QUERIES_DIR / "delete_taxon_conservation_statuses.sql"
+MARK_TAXON_CONSERVATION_STATUSES_LOADED_QUERY_PATH = DATABASE_QUERIES_DIR / "mark_taxon_conservation_statuses_loaded.sql"
 
 # SQL query files used to track applied database migrations.
 CREATE_SCHEMA_MIGRATIONS_TABLE_QUERY_PATH = DATABASE_QUERIES_DIR / "create_schema_migrations_table.sql"

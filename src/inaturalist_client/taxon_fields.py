@@ -5,8 +5,8 @@
 """
 
 
-# Taxon fields represented by the PostgreSQL taxa table.
-TAXON_ENRICHMENT_FIELDS = {
+# Taxon fields stored with each downloaded observation.
+TAXON_OBSERVATION_FIELDS = {
     "id": True,
     "name": True,
     "preferred_common_name": True,
@@ -22,6 +22,11 @@ TAXON_ENRICHMENT_FIELDS = {
     "endemic": True,
     "threatened": True,
     "extinct": True,
+}
+
+# Additional fields requested only by the taxonomy enrichment step.
+TAXON_ENRICHMENT_FIELDS = {
+    **TAXON_OBSERVATION_FIELDS,
     "conservation_status": {
         "id": True,
         "source_id": True,

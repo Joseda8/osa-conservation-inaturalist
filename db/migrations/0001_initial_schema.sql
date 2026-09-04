@@ -23,13 +23,15 @@ CREATE TABLE taxa (
     endemic BOOLEAN,
     threatened BOOLEAN,
     extinct BOOLEAN,
+    -- Marks that taxonomy enrichment has captured this taxon's iNaturalist conservation statuses.
+    conservation_statuses_loaded_at TIMESTAMPTZ,
     loaded_from TEXT NOT NULL,
     loaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE taxon_conservation_statuses (
     conservation_status_id BIGINT PRIMARY KEY,
-    taxon_id BIGINT NOT NULL REFERENCES taxa(taxon_id),
+    taxon_id BIGINT NOT NULL REFERENCES taxa(taxon_id) ON DELETE CASCADE,
     place_id BIGINT,
     source_id BIGINT,
     user_id BIGINT,

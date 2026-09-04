@@ -9,7 +9,7 @@ from typing import Any
 from psycopg import Connection
 from psycopg.types.json import Jsonb
 
-from .constants import SELECT_ALL_TAXON_IDS_QUERY_PATH, SELECT_MISSING_LINEAGE_TAXON_IDS_QUERY_PATH, UPSERT_TAXON_CONSERVATION_STATUS_QUERY_PATH, UPSERT_TAXON_QUERY_PATH
+from .constants import DELETE_TAXON_CONSERVATION_STATUSES_QUERY_PATH, MARK_TAXON_CONSERVATION_STATUSES_LOADED_QUERY_PATH, SELECT_ALL_TAXON_IDS_QUERY_PATH, SELECT_MISSING_LINEAGE_TAXON_IDS_QUERY_PATH, SELECT_TAXON_IDS_MISSING_CONSERVATION_STATUSES_QUERY_PATH, UPSERT_TAXON_CONSERVATION_STATUS_QUERY_PATH, UPSERT_TAXON_QUERY_PATH
 from .query_loader import load_sql_query
 
 class TaxonRepository:
@@ -41,11 +41,20 @@ class TaxonRepository:
         missing_taxon_rows = self._database_connection.execute(load_sql_query(SELECT_MISSING_LINEAGE_TAXON_IDS_QUERY_PATH)).fetchall()
         return [int(missing_taxon_row[0]) for missing_taxon_row in missing_taxon_rows]
 
-    def upsert_taxa(self, taxon_json_rows: list[dict[str, Any]], loaded_from: str) -> int:
+    def get_taxon_ids_missing_conservation_statuses(self) -> list[int]:
+        """Get taxon IDs that have not yet been enriched with iNaturalist statuses.
+
+        @return Sorted taxon IDs.
+        """
+        taxon_rows = self._database_connection.execute(load_sql_query(SELECT_TAXON_IDS_MISSING_CONSERVATION_STATUSES_QUERY_PATH)).fetchall()
+        return [int(taxon_row[0]) for taxon_row in taxon_rows]
+
+    def upsert_taxa(self, taxon_json_rows: list[dict[str, Any]], loaded_from: str, include_conservation_statuses: bool = False) -> int:
         """Insert or update taxon metadata.
 
         @param taxon_json_rows Taxon API response rows.
         @param loaded_from Source that supplied the taxon rows.
+        @param include_conservation_statuses Whether to replace statuses from taxonomy enrichment.
         @return Number of processed taxon rows.
         """
         for taxon_json in taxon_json_rows:
@@ -70,24 +79,32 @@ class TaxonRepository:
                     loaded_from,
                 ),
             )
-            self._upsert_conservation_statuses(taxon_json, loaded_from)
+            if include_conservation_statuses:
+                self._replace_conservation_statuses(taxon_json, loaded_from)
         return len(taxon_json_rows)
 
-    def _upsert_conservation_statuses(self, taxon_json: dict[str, Any], loaded_from: str):
-        """Store every conservation status returned for one taxon without interpretation.
+    def _replace_conservation_statuses(self, taxon_json: dict[str, Any], loaded_from: str):
+        """Replace one taxon's statuses with the iNaturalist response without interpretation.
 
         @param taxon_json iNaturalist taxon payload.
         @param loaded_from Source that supplied the taxon payload.
         """
+        taxon_id = taxon_json["id"]
+        self._database_connection.execute(load_sql_query(DELETE_TAXON_CONSERVATION_STATUSES_QUERY_PATH), (taxon_id,))
         conservation_statuses = [taxon_json.get("conservation_status"), *(taxon_json.get("conservation_statuses") or [])]
+        stored_status_ids = set()
         for conservation_status in conservation_statuses:
             if not isinstance(conservation_status, dict) or conservation_status.get("id") is None:
                 continue
+            conservation_status_id = conservation_status["id"]
+            if conservation_status_id in stored_status_ids:
+                continue
+            stored_status_ids.add(conservation_status_id)
             self._database_connection.execute(
                 load_sql_query(UPSERT_TAXON_CONSERVATION_STATUS_QUERY_PATH),
                 (
-                    conservation_status["id"],
-                    taxon_json["id"],
+                    conservation_status_id,
+                    taxon_id,
                     conservation_status.get("place_id"),
                     conservation_status.get("source_id"),
                     conservation_status.get("user_id"),
@@ -99,3 +116,4 @@ class TaxonRepository:
                     loaded_from,
                 ),
             )
+        self._database_connection.execute(load_sql_query(MARK_TAXON_CONSERVATION_STATUSES_LOADED_QUERY_PATH), (taxon_id,))
