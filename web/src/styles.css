@@ -556,6 +556,10 @@ button {
   gap: 0.4rem;
 }
 
+.time-series-data-set-selector {
+  margin: 0 0 1rem;
+}
+
 .time-series-control-group > span,
 .time-series-date-range label {
   color: var(--color-text-muted);

@@ -119,11 +119,13 @@ function getTickIndexes(pointCount) {
   return Array.from({ length: VISIBLE_X_AXIS_LABEL_COUNT }, (_, index) => Math.round((index * (pointCount - 1)) / (VISIBLE_X_AXIS_LABEL_COUNT - 1)));
 }
 
-export default function TimeSeriesChart({ allowedGroupings, ariaLabel, defaultGrouping = "day", defaultRangePreset = "last-7", measures = [], records, series, valueLabel }) {
+export default function TimeSeriesChart({ allowedGroupings, ariaLabel, dataSetLabel, dataSets = [], defaultGrouping = "day", defaultRangePreset = "last-7", measures = [], records, series, valueLabel }) {
+  const [selectedDataSetId, setSelectedDataSetId] = useState(() => dataSets[0]?.id ?? null);
+  const selectedDataSet = dataSets.find((dataSet) => dataSet.id === selectedDataSetId);
   const [selectedMeasureId, setSelectedMeasureId] = useState(() => measures[0]?.id ?? null);
   const selectedMeasure = measures.find((measure) => measure.id === selectedMeasureId);
-  const activeRecords = selectedMeasure?.records ?? records;
-  const activeSeries = selectedMeasure?.series ?? series;
+  const activeRecords = selectedDataSet?.records ?? selectedMeasure?.records ?? records;
+  const activeSeries = selectedDataSet?.series ?? selectedMeasure?.series ?? series;
   const activeValueLabel = selectedMeasure?.valueLabel ?? valueLabel;
   const valueAggregation = selectedMeasure?.valueAggregation ?? "sum";
   const dates = activeRecords.map((record) => record.date).sort();
@@ -208,6 +210,12 @@ export default function TimeSeriesChart({ allowedGroupings, ariaLabel, defaultGr
     setActivePoint(null);
   }
 
+  function selectDataSet(dataSet) {
+    setSelectedDataSetId(dataSet.id);
+    setSelectedSeriesIds(dataSet.series.map((seriesItem) => seriesItem.id));
+    setActivePoint(null);
+  }
+
   function getPointX(pointIndex) {
     return chartData.length === 1 ? CHART_PADDING.left + plotWidth / 2 : CHART_PADDING.left + (pointIndex * plotWidth) / (chartData.length - 1);
   }
@@ -250,6 +258,7 @@ export default function TimeSeriesChart({ allowedGroupings, ariaLabel, defaultGr
 
   return (
     <section aria-label={ariaLabel} className="time-series-chart">
+      {dataSets.length > 1 && <div className="time-series-control-group time-series-data-set-selector"><span>{dataSetLabel}</span><div className="time-series-button-group">{dataSets.map((dataSet) => <button aria-pressed={selectedDataSetId === dataSet.id} className={selectedDataSetId === dataSet.id ? "time-series-control active" : "time-series-control"} key={dataSet.id} onClick={() => selectDataSet(dataSet)} type="button">{dataSet.label}</button>)}</div></div>}
       <SeriesSelector items={activeSeries} onToggle={toggleSeries} selectedItemIds={selectedSeriesIds} />
       {timeSeriesControls}
       {rangeErrorMessage && <p className="time-series-range-validation">{rangeErrorMessage}</p>}

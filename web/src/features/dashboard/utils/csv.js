@@ -111,8 +111,7 @@ export function getGroupedBarChartData(csvContent, categoryColumn, seriesColumn,
   };
 }
 
-export function getTimeSeriesData(csvContent, dateColumn, seriesColumn, valueColumn, seriesLabels = {}, excludedSeries = [], seriesOrder = []) {
-  const [headerRow, ...dataRows] = parseCsv(csvContent);
+function getTimeSeriesDataFromRows(headerRow, dataRows, dateColumn, seriesColumn, valueColumn, seriesLabels = {}, excludedSeries = [], seriesOrder = []) {
   const dateColumnIndex = headerRow.indexOf(dateColumn);
   const seriesColumnIndex = headerRow.indexOf(seriesColumn);
   const valueColumnIndex = headerRow.indexOf(valueColumn);
@@ -127,4 +126,33 @@ export function getTimeSeriesData(csvContent, dateColumn, seriesColumn, valueCol
 
   const orderedSeriesKeys = [...seriesKeys].sort((firstSeries, secondSeries) => (seriesOrder.indexOf(firstSeries) === -1 ? seriesOrder.length : seriesOrder.indexOf(firstSeries)) - (seriesOrder.indexOf(secondSeries) === -1 ? seriesOrder.length : seriesOrder.indexOf(secondSeries)));
   return { records, series: orderedSeriesKeys.map((series, seriesIndex) => ({ color: `var(--bar-color-${seriesIndex + 1})`, id: series, label: seriesLabels[series] ?? series })) };
+}
+
+export function getTimeSeriesData(csvContent, dateColumn, seriesColumn, valueColumn, seriesLabels = {}, excludedSeries = [], seriesOrder = []) {
+  const [headerRow, ...dataRows] = parseCsv(csvContent);
+  return getTimeSeriesDataFromRows(headerRow, dataRows, dateColumn, seriesColumn, valueColumn, seriesLabels, excludedSeries, seriesOrder);
+}
+
+export function getTimeSeriesDataSets(csvContent, dataSetColumn, dataSetLabelColumn, dateColumn, seriesColumn, valueColumn, seriesLabels = {}, excludedSeries = [], seriesOrder = [], dataSetOrder = []) {
+  const [headerRow, ...dataRows] = parseCsv(csvContent);
+  const dataSetColumnIndex = headerRow.indexOf(dataSetColumn);
+  const dataSetLabelColumnIndex = headerRow.indexOf(dataSetLabelColumn);
+  const rowsByDataSet = new Map();
+
+  dataRows.forEach((dataRow) => {
+    const dataSetId = dataRow[dataSetColumnIndex];
+    if (!rowsByDataSet.has(dataSetId)) {
+      rowsByDataSet.set(dataSetId, { id: dataSetId, label: dataRow[dataSetLabelColumnIndex], rows: [] });
+    }
+    rowsByDataSet.get(dataSetId).rows.push(dataRow);
+  });
+
+  return [...rowsByDataSet.values()].sort((firstDataSet, secondDataSet) => {
+    const firstIndex = dataSetOrder.indexOf(firstDataSet.id);
+    const secondIndex = dataSetOrder.indexOf(secondDataSet.id);
+    if (firstIndex !== -1 || secondIndex !== -1) {
+      return (firstIndex === -1 ? dataSetOrder.length : firstIndex) - (secondIndex === -1 ? dataSetOrder.length : secondIndex);
+    }
+    return firstDataSet.label.localeCompare(secondDataSet.label);
+  }).map((dataSet) => ({ ...dataSet, ...getTimeSeriesDataFromRows(headerRow, dataSet.rows, dateColumn, seriesColumn, valueColumn, seriesLabels, excludedSeries, seriesOrder) }));
 }
