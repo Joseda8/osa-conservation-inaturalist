@@ -14,6 +14,7 @@ export default function DashboardSidebar({ activeReportId, activeSectionId, repo
 
   function selectSection(sectionId) {
     setActiveSectionId(sectionId);
+    setActiveReportId(reports.find((report) => report.sectionId === sectionId)?.id ?? null);
     setSearchTerm("");
   }
 

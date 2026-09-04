@@ -111,6 +111,27 @@ export function getGroupedBarChartData(csvContent, categoryColumn, seriesColumn,
   };
 }
 
+export function getRankedBarChartData(csvContent, groupColumn, groupLabelColumn, itemColumn, itemDetailColumn, rankColumn, valueColumn, groupLabels = {}, groupOrder = []) {
+  const [headerRow, ...dataRows] = parseCsv(csvContent);
+  const groupColumnIndex = headerRow.indexOf(groupColumn);
+  const groupLabelColumnIndex = headerRow.indexOf(groupLabelColumn);
+  const itemColumnIndex = headerRow.indexOf(itemColumn);
+  const itemDetailColumnIndex = headerRow.indexOf(itemDetailColumn);
+  const rankColumnIndex = headerRow.indexOf(rankColumn);
+  const valueColumnIndex = headerRow.indexOf(valueColumn);
+  const groupsById = new Map();
+
+  dataRows.forEach((dataRow) => {
+    const groupId = dataRow[groupColumnIndex];
+    if (!groupsById.has(groupId)) {
+      groupsById.set(groupId, { id: groupId, items: [], label: groupLabels[groupId] ?? dataRow[groupLabelColumnIndex] ?? groupId });
+    }
+    groupsById.get(groupId).items.push({ detail: dataRow[itemDetailColumnIndex], id: `${groupId}-${dataRow[rankColumnIndex]}-${dataRow[itemColumnIndex]}`, label: dataRow[itemColumnIndex], rank: Number(dataRow[rankColumnIndex]), value: Number(dataRow[valueColumnIndex]) || 0 });
+  });
+
+  return [...groupsById.values()].sort((firstGroup, secondGroup) => (groupOrder.indexOf(firstGroup.id) === -1 ? groupOrder.length : groupOrder.indexOf(firstGroup.id)) - (groupOrder.indexOf(secondGroup.id) === -1 ? groupOrder.length : groupOrder.indexOf(secondGroup.id))).map((group, groupIndex) => ({ ...group, color: `var(--bar-color-${groupIndex + 1})`, items: group.items.sort((firstItem, secondItem) => firstItem.rank - secondItem.rank) }));
+}
+
 function getTimeSeriesDataFromRows(headerRow, dataRows, dateColumn, seriesColumn, valueColumn, seriesLabels = {}, excludedSeries = [], seriesOrder = []) {
   const dateColumnIndex = headerRow.indexOf(dateColumn);
   const seriesColumnIndex = headerRow.indexOf(seriesColumn);

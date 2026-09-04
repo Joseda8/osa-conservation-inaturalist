@@ -1,12 +1,17 @@
 export const DASHBOARD_SECTIONS = [
-  { description: "Observation trends across Costa Rica.", id: "national-trends", label: "National trends" },
+  { description: "iNaturalist observation trends across Costa Rica.", id: "national-trends", label: "National trends" },
   { description: "Observations from OSA Conservation projects.", id: "osa-stats", label: "OSA stats" },
 ];
 
 export const DASHBOARD_REPORT_CATEGORIES = [
+  { id: "national-species-stats", label: "Species stats", sectionId: "national-trends" },
   { id: "observation-stats", label: "Observation stats", sectionId: "osa-stats" },
   { id: "observer-stats", label: "Observer stats", sectionId: "osa-stats" },
   { id: "species-stats", label: "Species stats", sectionId: "osa-stats" },
+];
+
+export const NATIONAL_TRENDS_REPORTS = [
+  { categoryId: "national-species-stats", fileName: "top-five-species-by-region.csv", id: "top-five-observed-species", infoText: "Each result is ranked separately from iNaturalist monthly species-count trends. Costa Rica represents national observations; ABS and OBS are their respective project trends.", label: "Top five observed species", sectionId: "national-trends", visualization: { ariaLabel: "Five most-observed species in ABS, OBS, and Costa Rica", groupColumn: "region_key", groupLabelColumn: "region_label", groupLabels: { abs: "ABS", costa_rica: "Costa Rica", obs: "OBS" }, groupOrder: ["abs", "obs", "costa_rica"], itemColumn: "common_name", itemDetailColumn: "scientific_name", rankColumn: "species_rank", type: "ranked-bar", valueColumn: "observation_count", valueLabel: "observations" } },
 ];
 
 const PROJECT_OBSERVATION_SERIES = {
@@ -53,7 +58,9 @@ export const OSA_STATS_REPORTS = [
   createFocalTaxaReport({ ariaLabel: "Observations of OSA's focal tree species by project", dataSetOrder: ["190315", "189310", "185878", "910767", "440806"], fileName: "abs-vs-obs-key-tree-observations-over-time.csv", id: "focal-trees-over-time", label: "Focal trees over time" }),
 ];
 
-export const OSA_STATS_DATA_FILES = [
-  ...OSA_STATS_REPORTS.map(({ fileName, id, label }) => ({ fileName, id, label })),
-  ...OSA_STATS_REPORTS.flatMap((report) => report.relatedDownloads ?? []),
+export const DASHBOARD_REPORTS = [...NATIONAL_TRENDS_REPORTS, ...OSA_STATS_REPORTS];
+
+export const DASHBOARD_DATA_FILES = [
+  ...DASHBOARD_REPORTS.map(({ fileName, id, label }) => ({ fileName, id, label })),
+  ...DASHBOARD_REPORTS.flatMap((report) => report.relatedDownloads ?? []),
 ];

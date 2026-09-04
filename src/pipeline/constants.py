@@ -47,6 +47,7 @@ ABS_VS_OBS_REPORTS = (
     ("abs-vs-obs-key-marine-observations-over-time.csv", Path("db") / "queries" / "dashboard" / "species_stats" / "abs_vs_obs_key_marine_observations_over_time.sql"),
     ("abs-vs-obs-key-mammal-observations-over-time.csv", Path("db") / "queries" / "dashboard" / "species_stats" / "abs_vs_obs_key_mammal_observations_over_time.sql"),
     ("abs-vs-obs-key-tree-observations-over-time.csv", Path("db") / "queries" / "dashboard" / "species_stats" / "abs_vs_obs_key_tree_observations_over_time.sql"),
+    ("top-five-species-by-region.csv", Path("db") / "queries" / "dashboard" / "species_stats" / "top_five_species_by_region.sql"),
     ("abs-vs-obs-active-observers.csv", Path("db") / "queries" / "dashboard" / "observer_stats" / "abs_vs_obs_active_observers.sql"),
     ("abs-vs-obs-observers-by-month.csv", Path("db") / "queries" / "dashboard" / "observer_stats" / "abs_vs_obs_observers_by_month.sql"),
     ("abs-vs-obs-duplicate-observations.csv", Path("db") / "queries" / "dashboard" / "observation_stats" / "abs_vs_obs_duplicate_observations.sql"),
