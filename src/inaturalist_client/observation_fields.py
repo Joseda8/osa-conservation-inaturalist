@@ -13,6 +13,7 @@ OBSERVATION_ANALYSIS_FIELDS = {
     "quality_grade": True,
     "species_guess": True,
     "observed_on": True,
+    "time_observed_at": True,
     "created_at": True,
     "updated_at": True,
     "geojson": True,

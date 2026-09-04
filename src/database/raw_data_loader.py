@@ -277,10 +277,11 @@ class RawDataLoader:
 
     @staticmethod
     def _get_observed_date_time(observation_json: dict[str, Any]) -> tuple[date | None, datetime | None]:
-        """Parse iNaturalist's mixed-precision observation date field.
+        """Parse iNaturalist's observation date and optional time fields.
 
-        iNaturalist's observed_on can contain a date alone or a timestamp with its UTC offset.
-        Preserve the date in every case and preserve the timestamp when the source supplies one.
+        iNaturalist supplies the calendar date in observed_on and the optional timestamp,
+        including its UTC offset, in time_observed_at. No timestamp is inferred when
+        time_observed_at is absent.
 
         @param observation_json iNaturalist observation payload.
         @return Observation calendar date and optional timestamp.
@@ -289,11 +290,8 @@ class RawDataLoader:
         if observed_on_value is None:
             return None, None
 
-        observed_on_text = str(observed_on_value)
-        observed_date = date.fromisoformat(observed_on_text[:10])
-        if len(observed_on_text) == len("YYYY-MM-DD"):
-            return observed_date, None
-        return observed_date, RawDataLoader._parse_observed_timestamp(observed_on_text)
+        observed_date = date.fromisoformat(str(observed_on_value)[:10])
+        return observed_date, RawDataLoader._parse_observed_timestamp(observation_json.get("time_observed_at"))
 
     @staticmethod
     def _parse_observed_timestamp(value: Any) -> datetime | None:

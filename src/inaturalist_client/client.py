@@ -11,7 +11,7 @@ from time import sleep
 from typing import Any
 
 from pyinaturalist.constants import API_V2
-from pyinaturalist.converters import convert_all_coordinates, convert_all_timestamps
+from pyinaturalist.converters import convert_all_coordinates
 from pyinaturalist.session import post
 from requests.exceptions import RequestException
 from requests_cache import NEVER_EXPIRE
@@ -688,7 +688,6 @@ class InaturalistClient(JsonFileStorage):
             force_refresh=force_refresh,
         ).json()
         observation_response["results"] = convert_all_coordinates(observation_response["results"])
-        observation_response["results"] = convert_all_timestamps(observation_response["results"])
         return observation_response
 
     def _sleep_after_downloaded_request(self, request_cooldown_seconds: float):
