@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function RankedBarChart({ ariaLabel, groups, rankLimitOptions = [], valueLabel }) {
+export default function RankedBarChart({ annotationLabel, ariaLabel, groups, rankLimitOptions = [], valueLabel }) {
   const [activeGroupId, setActiveGroupId] = useState(groups[0]?.id ?? null);
   const [activeRankLimit, setActiveRankLimit] = useState(rankLimitOptions[0]?.value ?? null);
   const [activeItemId, setActiveItemId] = useState(null);
@@ -44,9 +44,9 @@ export default function RankedBarChart({ ariaLabel, groups, rankLimitOptions = [
                   {item.detail && item.detail !== item.label && <em>{item.detail}</em>}
                   {item.badge && <span className="ranked-bar-item-badge" style={{ "--ranked-bar-badge-color": item.badgeColor }}>{item.badge}</span>}
                 </div>
-                <button aria-label={`${item.rank}. ${item.label}: ${item.value.toLocaleString()} ${valueLabel}`} className={activeItem?.id === item.id ? "ranked-bar-row active" : "ranked-bar-row"} onBlur={() => setActiveItemId(null)} onFocus={() => setActiveItemId(item.id)} onMouseEnter={() => setActiveItemId(item.id)} onMouseLeave={() => setActiveItemId(null)} style={{ "--ranked-bar-color": activeGroup.color, "--ranked-bar-width": `${(item.value / maximumValue) * 100}%` }} type="button">
+                <button aria-label={`${item.rank}. ${item.label}: ${item.value.toLocaleString()} ${valueLabel}${item.annotation === null ? "" : `; ${item.annotation.toFixed(2)}% ${annotationLabel}`}`} className={activeItem?.id === item.id ? "ranked-bar-row active" : "ranked-bar-row"} onBlur={() => setActiveItemId(null)} onFocus={() => setActiveItemId(item.id)} onMouseEnter={() => setActiveItemId(item.id)} onMouseLeave={() => setActiveItemId(null)} style={{ "--ranked-bar-color": activeGroup.color, "--ranked-bar-width": `${(item.value / maximumValue) * 100}%` }} type="button">
                   <span className="ranked-bar-fill" />
-                  <strong>{item.value.toLocaleString()}</strong>
+                  <span className="ranked-bar-value"><strong>{item.value.toLocaleString()}</strong>{item.annotation !== null && <small>{item.annotation.toFixed(2)}%</small>}</span>
                 </button>
               </div>
             </li>
@@ -55,7 +55,7 @@ export default function RankedBarChart({ ariaLabel, groups, rankLimitOptions = [
         <div className="ranked-bar-chart-details">
           <p className="chart-hint">Hover or focus a bar for its exact count.</p>
           <div className={activeItem ? "chart-tooltip active" : "chart-tooltip"}>
-            {activeItem ? <><strong>{activeItem.rank}. {activeItem.label}</strong><span>{activeItem.value.toLocaleString()} {valueLabel}</span></> : <span>Select a species bar to see its count.</span>}
+            {activeItem ? <><strong>{activeItem.rank}. {activeItem.label}</strong><span>{activeItem.value.toLocaleString()} {valueLabel}</span>{activeItem.annotation !== null && <span>{activeItem.annotation.toFixed(2)}% {annotationLabel}{activeItem.annotationTotal === null ? "" : ` (${activeItem.annotationTotal.toLocaleString()} ${valueLabel} total)`}</span>}</> : <span>Select a species bar to see its count.</span>}
           </div>
         </div>
       </div>

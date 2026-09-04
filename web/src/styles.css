@@ -652,6 +652,18 @@ button {
   text-align: left;
 }
 
+.ranked-bar-value {
+  align-items: end;
+  display: grid;
+  gap: 0.1rem;
+  justify-items: end;
+}
+
+.ranked-bar-value small {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
 .ranked-bar-fill {
   background: var(--ranked-bar-color);
   border-radius: 999px;
