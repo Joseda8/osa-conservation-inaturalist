@@ -6,6 +6,9 @@
 
   /* Data visualizations. */
   --color-data-aggregated: #d29c2b;
+  --color-data-critically-endangered: #a52b1e;
+  --color-data-endangered: #ce6d22;
+  --color-data-vulnerable: #bc9220;
   --bar-color-1: var(--color-brand-primary);
   --bar-color-2: var(--color-brand-light);
   --bar-color-3: var(--color-data-aggregated);

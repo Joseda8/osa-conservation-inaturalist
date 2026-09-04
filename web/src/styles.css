@@ -629,6 +629,17 @@ button {
   font-size: 0.875rem;
 }
 
+.ranked-bar-item-badge {
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--ranked-bar-badge-color, var(--color-border-strong));
+  border-radius: 999px;
+  color: var(--ranked-bar-badge-color, var(--color-text-secondary));
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 700;
+  padding: 0.15rem 0.4rem;
+}
+
 .ranked-bar-row {
   align-items: center;
   background: transparent;

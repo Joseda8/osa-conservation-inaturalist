@@ -111,12 +111,13 @@ export function getGroupedBarChartData(csvContent, categoryColumn, seriesColumn,
   };
 }
 
-export function getRankedBarChartData(csvContent, groupColumn, groupLabelColumn, itemColumn, itemDetailColumn, rankColumn, valueColumn, groupLabels = {}, groupOrder = []) {
+export function getRankedBarChartData(csvContent, groupColumn, groupLabelColumn, itemColumn, itemDetailColumn, itemBadgeColumn, itemBadgeColors, rankColumn, valueColumn, groupLabels = {}, groupOrder = []) {
   const [headerRow, ...dataRows] = parseCsv(csvContent);
   const groupColumnIndex = headerRow.indexOf(groupColumn);
   const groupLabelColumnIndex = headerRow.indexOf(groupLabelColumn);
   const itemColumnIndex = headerRow.indexOf(itemColumn);
   const itemDetailColumnIndex = headerRow.indexOf(itemDetailColumn);
+  const itemBadgeColumnIndex = headerRow.indexOf(itemBadgeColumn);
   const rankColumnIndex = headerRow.indexOf(rankColumn);
   const valueColumnIndex = headerRow.indexOf(valueColumn);
   const groupsById = new Map();
@@ -126,7 +127,9 @@ export function getRankedBarChartData(csvContent, groupColumn, groupLabelColumn,
     if (!groupsById.has(groupId)) {
       groupsById.set(groupId, { id: groupId, items: [], label: groupLabels[groupId] ?? dataRow[groupLabelColumnIndex] ?? groupId });
     }
-    groupsById.get(groupId).items.push({ detail: dataRow[itemDetailColumnIndex], id: `${groupId}-${dataRow[rankColumnIndex]}-${dataRow[itemColumnIndex]}`, label: dataRow[itemColumnIndex], rank: Number(dataRow[rankColumnIndex]), value: Number(dataRow[valueColumnIndex]) || 0 });
+    const itemDetail = dataRow[itemDetailColumnIndex];
+    const itemBadge = itemBadgeColumnIndex === -1 ? null : dataRow[itemBadgeColumnIndex];
+    groupsById.get(groupId).items.push({ badge: itemBadge, badgeColor: itemBadge === null ? null : itemBadgeColors?.[itemBadge], detail: itemDetail, id: `${groupId}-${dataRow[rankColumnIndex]}-${dataRow[itemColumnIndex]}`, label: dataRow[itemColumnIndex] || itemDetail, rank: Number(dataRow[rankColumnIndex]), value: Number(dataRow[valueColumnIndex]) || 0 });
   });
 
   return [...groupsById.values()].sort((firstGroup, secondGroup) => (groupOrder.indexOf(firstGroup.id) === -1 ? groupOrder.length : groupOrder.indexOf(firstGroup.id)) - (groupOrder.indexOf(secondGroup.id) === -1 ? groupOrder.length : groupOrder.indexOf(secondGroup.id))).map((group, groupIndex) => ({ ...group, color: `var(--bar-color-${groupIndex + 1})`, items: group.items.sort((firstItem, secondItem) => firstItem.rank - secondItem.rank) }));

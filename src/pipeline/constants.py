@@ -42,6 +42,7 @@ ABS_VS_OBS_REPORTS = (
     ("abs-vs-obs-observation-counts.csv", Path("db") / "queries" / "dashboard" / "observation_stats" / "abs_vs_obs_observation_counts.sql"),
     ("abs-vs-obs-observations-by-day.csv", Path("db") / "queries" / "dashboard" / "observation_stats" / "abs_vs_obs_observations_by_day.sql"),
     ("abs-vs-obs-species-reported-by-month.csv", Path("db") / "queries" / "dashboard" / "species_stats" / "abs_vs_obs_species_reported_by_month.sql"),
+    ("aggregated-iucn-threatened-species.csv", Path("db") / "queries" / "dashboard" / "species_stats" / "aggregated_iucn_threatened_species.sql"),
     ("abs-vs-obs-key-amphibian-and-reptile-observations-over-time.csv", Path("db") / "queries" / "dashboard" / "species_stats" / "abs_vs_obs_key_amphibian_and_reptile_observations_over_time.sql"),
     ("abs-vs-obs-key-bird-observations-over-time.csv", Path("db") / "queries" / "dashboard" / "species_stats" / "abs_vs_obs_key_bird_observations_over_time.sql"),
     ("abs-vs-obs-key-marine-observations-over-time.csv", Path("db") / "queries" / "dashboard" / "species_stats" / "abs_vs_obs_key_marine_observations_over_time.sql"),
