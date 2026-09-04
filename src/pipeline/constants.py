@@ -41,7 +41,7 @@ DATA_UPDATE_PIPELINE_STEP_NAMES = ("download-raw-data", "download-trends", "load
 ABS_VS_OBS_REPORTS = (
     ("abs-vs-obs-observation-counts.csv", Path("db") / "queries" / "dashboard" / "observation_stats" / "abs_vs_obs_observation_counts.sql"),
     ("abs-vs-obs-observations-by-day.csv", Path("db") / "queries" / "dashboard" / "observation_stats" / "abs_vs_obs_observations_by_day.sql"),
-    ("abs-vs-obs-species-reported-by-month.csv", Path("db") / "queries" / "dashboard" / "abs_vs_obs_species_reported_by_month.sql"),
+    ("abs-vs-obs-species-reported-by-month.csv", Path("db") / "queries" / "dashboard" / "species_stats" / "abs_vs_obs_species_reported_by_month.sql"),
     ("abs-vs-obs-key-mammal-observations-over-time.csv", Path("db") / "queries" / "dashboard" / "species_stats" / "abs_vs_obs_key_mammal_observations_over_time.sql"),
     ("abs-vs-obs-active-observers.csv", Path("db") / "queries" / "dashboard" / "observer_stats" / "abs_vs_obs_active_observers.sql"),
     ("abs-vs-obs-observers-by-month.csv", Path("db") / "queries" / "dashboard" / "observer_stats" / "abs_vs_obs_observers_by_month.sql"),

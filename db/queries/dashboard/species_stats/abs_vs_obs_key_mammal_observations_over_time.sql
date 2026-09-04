@@ -4,12 +4,12 @@ WITH focal_mammals AS (
     SELECT *
     FROM (
         VALUES
-            (42007::BIGINT, 'Puma concolor'::TEXT, 'Puma'::TEXT, 'Puma'::TEXT),
-            (43411::BIGINT, 'Ateles geoffroyi'::TEXT, 'Central American Spider Monkey'::TEXT, 'Mono colorado'::TEXT),
-            (43355::BIGINT, 'Tapirus bairdii'::TEXT, 'Baird''s Tapir'::TEXT, 'Danta'::TEXT),
-            (41970::BIGINT, 'Panthera onca'::TEXT, 'Jaguar'::TEXT, 'Jaguar'::TEXT),
-            (42115::BIGINT, 'Tayassu pecari'::TEXT, 'White-lipped Peccary'::TEXT, 'Chancho de monte'::TEXT)
-    ) AS focal_mammal(taxon_id, scientific_name, english_name, spanish_name)
+            (42007::BIGINT, 'Puma concolor'::TEXT, 'Puma'::TEXT),
+            (43411::BIGINT, 'Ateles geoffroyi'::TEXT, 'Central American Spider Monkey'::TEXT),
+            (43355::BIGINT, 'Tapirus bairdii'::TEXT, 'Baird''s Tapir'::TEXT),
+            (41970::BIGINT, 'Panthera onca'::TEXT, 'Jaguar'::TEXT),
+            (42115::BIGINT, 'Tayassu pecari'::TEXT, 'White-lipped Peccary'::TEXT)
+    ) AS focal_mammal(taxon_id, scientific_name, english_name)
 ),
 matched_project_observations AS (
     -- Include observations identified as a focal species or one of its descendant taxa.
@@ -19,8 +19,7 @@ matched_project_observations AS (
         observations.observed_on,
         focal_mammals.taxon_id,
         focal_mammals.scientific_name,
-        focal_mammals.english_name,
-        focal_mammals.spanish_name
+        focal_mammals.english_name
     FROM observations
     INNER JOIN taxa AS observed_taxa
         ON observed_taxa.taxon_id = observations.taxon_id
@@ -37,7 +36,6 @@ project_counts AS (
         taxon_id,
         scientific_name,
         english_name,
-        spanish_name,
         COUNT(*) AS observation_count
     FROM matched_project_observations
     GROUP BY
@@ -45,8 +43,7 @@ project_counts AS (
         observed_on,
         taxon_id,
         scientific_name,
-        english_name,
-        spanish_name
+        english_name
 ),
 aggregated_counts AS (
     -- The same iNaturalist observation can belong to both projects; count it once here.
@@ -56,15 +53,13 @@ aggregated_counts AS (
         taxon_id,
         scientific_name,
         english_name,
-        spanish_name,
         COUNT(DISTINCT observation_id) AS observation_count
     FROM matched_project_observations
     GROUP BY
         observed_on,
         taxon_id,
         scientific_name,
-        english_name,
-        spanish_name
+        english_name
 )
 SELECT
     project_alias,
@@ -72,7 +67,6 @@ SELECT
     taxon_id,
     scientific_name,
     english_name,
-    spanish_name,
     observation_count
 FROM project_counts
 UNION ALL
@@ -82,7 +76,6 @@ SELECT
     taxon_id,
     scientific_name,
     english_name,
-    spanish_name,
     observation_count
 FROM aggregated_counts
 ORDER BY
