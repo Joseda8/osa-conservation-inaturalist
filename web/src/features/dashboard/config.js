@@ -36,6 +36,7 @@ function createFocalTaxaReport({ ariaLabel, dataSetLabel = "Species", dataSetOrd
       dateColumn: "observed_date",
       defaultGrouping: "month",
       defaultRangePreset: "last-year",
+      measures: [{ id: "reported", label: "Reported in period", valueColumn: "observation_count", valueLabel: "observations" }, { id: "cumulative", label: "Cumulative total", valueAggregation: "latest", valueColumn: "cumulative_observation_count", valueLabel: "observations" }],
       ...PROJECT_OBSERVATION_SERIES,
       type: "time-series",
       valueColumn: "observation_count",

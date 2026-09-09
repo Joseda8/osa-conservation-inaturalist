@@ -60,6 +60,40 @@ aggregated_counts AS (
         taxon_id,
         scientific_name,
         english_name
+),
+observation_counts AS (
+    SELECT
+        project_alias,
+        observed_date,
+        taxon_id,
+        scientific_name,
+        english_name,
+        observation_count
+    FROM project_counts
+    UNION ALL
+    SELECT
+        project_alias,
+        observed_date,
+        taxon_id,
+        scientific_name,
+        english_name,
+        observation_count
+    FROM aggregated_counts
+),
+cumulative_counts AS (
+    SELECT
+        project_alias,
+        observed_date,
+        taxon_id,
+        scientific_name,
+        english_name,
+        observation_count,
+        SUM(observation_count) OVER (
+            PARTITION BY project_alias, taxon_id
+            ORDER BY observed_date
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS cumulative_observation_count
+    FROM observation_counts
 )
 SELECT
     project_alias,
@@ -67,17 +101,9 @@ SELECT
     taxon_id,
     scientific_name,
     english_name,
-    observation_count
-FROM project_counts
-UNION ALL
-SELECT
-    project_alias,
-    observed_date,
-    taxon_id,
-    scientific_name,
-    english_name,
-    observation_count
-FROM aggregated_counts
+    observation_count,
+    cumulative_observation_count
+FROM cumulative_counts
 ORDER BY
     observed_date,
     taxon_id,

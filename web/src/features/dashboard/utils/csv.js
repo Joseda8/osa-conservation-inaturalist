@@ -159,7 +159,7 @@ export function getTimeSeriesData(csvContent, dateColumn, seriesColumn, valueCol
   return getTimeSeriesDataFromRows(headerRow, dataRows, dateColumn, seriesColumn, valueColumn, seriesLabels, excludedSeries, seriesOrder);
 }
 
-export function getTimeSeriesDataSets(csvContent, dataSetColumn, dataSetLabelColumn, dateColumn, seriesColumn, valueColumn, seriesLabels = {}, excludedSeries = [], seriesOrder = [], dataSetOrder = []) {
+export function getTimeSeriesDataSets(csvContent, dataSetColumn, dataSetLabelColumn, dateColumn, seriesColumn, valueColumn, seriesLabels = {}, excludedSeries = [], seriesOrder = [], dataSetOrder = [], measures = []) {
   const [headerRow, ...dataRows] = parseCsv(csvContent);
   const dataSetColumnIndex = headerRow.indexOf(dataSetColumn);
   const dataSetLabelColumnIndex = headerRow.indexOf(dataSetLabelColumn);
@@ -180,5 +180,5 @@ export function getTimeSeriesDataSets(csvContent, dataSetColumn, dataSetLabelCol
       return (firstIndex === -1 ? dataSetOrder.length : firstIndex) - (secondIndex === -1 ? dataSetOrder.length : secondIndex);
     }
     return firstDataSet.label.localeCompare(secondDataSet.label);
-  }).map((dataSet) => ({ ...dataSet, ...getTimeSeriesDataFromRows(headerRow, dataSet.rows, dateColumn, seriesColumn, valueColumn, seriesLabels, excludedSeries, seriesOrder) }));
+  }).map((dataSet) => ({ ...dataSet, ...getTimeSeriesDataFromRows(headerRow, dataSet.rows, dateColumn, seriesColumn, valueColumn, seriesLabels, excludedSeries, seriesOrder), measures: measures.map((measure) => ({ ...measure, ...getTimeSeriesDataFromRows(headerRow, dataSet.rows, dateColumn, seriesColumn, measure.valueColumn, seriesLabels, excludedSeries, seriesOrder) })) }));
 }
